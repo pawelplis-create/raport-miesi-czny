@@ -10,20 +10,20 @@
 <style>
   :root {
     --teal: #00c4c0;
-    --teal-dim: rgba(0,196,192,0.15);
-    --teal-glow: rgba(0,196,192,0.35);
+    --teal-dim: rgba(0,196,192,0.10);
+    --teal-glow: rgba(0,196,192,0.25);
     --navy: #1a2e35;
     --navy-mid: #223843;
     --navy-light: #2d4a55;
     --navy-lighter: #3a5c6a;
-    --text-primary: #e8f4f5;
-    --text-secondary: #8bb8c0;
-    --text-muted: #5a8590;
-    --border: rgba(0,196,192,0.18);
-    --card-bg: rgba(26,46,53,0.7);
-    --success: #2ecc8f;
-    --warning: #f0a500;
-    --danger: #e05555;
+    --text-primary: #1a2e35;
+    --text-secondary: #2d5a65;
+    --text-muted: #6b9aa5;
+    --border: rgba(0,196,192,0.20);
+    --card-bg: #ffffff;
+    --success: #1aaa6e;
+    --warning: #d4870a;
+    --danger: #cc3333;
     --font-display: 'Syne', sans-serif;
     --font-body: 'DM Sans', sans-serif;
   }
@@ -32,7 +32,7 @@
 
   body {
     font-family: var(--font-body);
-    background: var(--navy);
+    background: #f0f9f9;
     color: var(--text-primary);
     min-height: 100vh;
     overflow-x: hidden;
@@ -44,8 +44,8 @@
     position: fixed;
     inset: 0;
     background:
-      radial-gradient(ellipse 80% 60% at 10% 0%, rgba(0,196,192,0.07) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 80% at 90% 100%, rgba(0,196,192,0.05) 0%, transparent 55%);
+      radial-gradient(ellipse 80% 60% at 10% 0%, rgba(0,196,192,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 90% 100%, rgba(26,46,53,0.04) 0%, transparent 55%);
     pointer-events: none;
     z-index: 0;
   }
@@ -54,8 +54,8 @@
   .site-header {
     position: relative;
     z-index: 10;
-    background: linear-gradient(135deg, #0f1e24 0%, var(--navy) 100%);
-    border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, var(--navy) 0%, #2d4a55 100%);
+    border-bottom: 2px solid var(--teal);
     padding: 0 2rem;
   }
   .header-inner {
@@ -122,9 +122,10 @@
   .tab-bar {
     position: relative;
     z-index: 10;
-    background: rgba(15,30,36,0.95);
+    background: #ffffff;
     border-bottom: 1px solid var(--border);
     padding: 0 2rem;
+    box-shadow: 0 2px 8px rgba(0,196,192,0.08);
   }
   .tab-bar-inner {
     max-width: 1400px;
@@ -154,6 +155,9 @@
     transition: color 0.2s;
     flex-shrink: 0;
   }
+  .tab-btn:hover { color: var(--navy); }
+  .tab-btn.active { color: var(--teal); }
+
   .tab-btn .tab-icon { font-size: 1rem; }
   .tab-btn::after {
     content: '';
@@ -164,11 +168,7 @@
     transform: scaleX(0);
     transition: transform 0.25s ease;
   }
-  .tab-btn:hover { color: var(--text-secondary); }
-  .tab-btn.active { color: var(--teal); }
   .tab-btn.active::after { transform: scaleX(1); }
-
-  /* ── MAIN ── */
   .main-content {
     position: relative;
     z-index: 5;
@@ -282,7 +282,7 @@
     font-size: 0.85rem;
   }
   .data-table thead th {
-    background: rgba(0,196,192,0.06);
+    background: rgba(0,196,192,0.08);
     padding: 0.75rem 1.2rem;
     text-align: left;
     font-family: var(--font-display);
@@ -290,7 +290,7 @@
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--navy);
     border-bottom: 1px solid var(--border);
   }
   .data-table tbody tr { border-bottom: 1px solid rgba(0,196,192,0.07); transition: background 0.15s; }
@@ -506,6 +506,7 @@
     font-size: 0.72rem;
     color: var(--text-muted);
     letter-spacing: 0.06em;
+    background: #ffffff;
   }
 
   /* responsive */
@@ -603,12 +604,12 @@
     <!-- CHARTS ROW -->
     <div class="chart-grid">
       <div class="chart-card">
-        <div class="chart-card-title">Spotkania odbyte w terenie per konsultant CC</div>
-        <canvas id="chart-setters"></canvas>
+        <div class="chart-card-title">Porównanie miesiąc do miesiąca – zespół</div>
+        <canvas id="chart-mom"></canvas>
       </div>
       <div class="chart-card">
-        <div class="chart-card-title">Źródła spotkań</div>
-        <canvas id="chart-sources"></canvas>
+        <div class="chart-card-title">Porównanie rok do roku – zespół</div>
+        <canvas id="chart-yoy"></canvas>
       </div>
     </div>
 
@@ -633,17 +634,6 @@
       </table>
     </div>
 
-    <!-- M/M & R/R -->
-    <div class="chart-grid">
-      <div class="chart-card">
-        <div class="chart-card-title">Porównanie miesiąc do miesiąca</div>
-        <canvas id="chart-mom"></canvas>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-title">Porównanie rok do roku</div>
-        <canvas id="chart-yoy"></canvas>
-      </div>
-    </div>
   </section>
 
   <!-- ═══════════════════════════════════════════════
@@ -1292,7 +1282,7 @@ const NAVY_MID = '#223843';
 const chartDefaults = {
   responsive: true,
   maintainAspectRatio: true,
-  plugins: { legend: { labels: { color: '#8bb8c0', font: { family: 'DM Sans', size: 11 } } } },
+  plugins: { legend: { labels: { color: '#1a2e35', font: { family: 'DM Sans', size: 11 } } } },
 };
 
 function makeBarChart(id, labels, data, label) {
@@ -1308,8 +1298,8 @@ function makeBarChart(id, labels, data, label) {
     options: {
       ...chartDefaults,
       scales: {
-        x: { ticks: { color: '#5a8590', font: { size: 10 } }, grid: { color: 'rgba(0,196,192,0.07)' } },
-        y: { ticks: { color: '#5a8590', font: { size: 10 } }, grid: { color: 'rgba(0,196,192,0.07)' }, beginAtZero: true }
+        x: { ticks: { color: '#2d5a65', font: { size: 10 } }, grid: { color: 'rgba(0,196,192,0.10)' } },
+        y: { ticks: { color: '#2d5a65', font: { size: 10 } }, grid: { color: 'rgba(0,196,192,0.10)' }, beginAtZero: true }
       }
     }
   });
@@ -1401,24 +1391,12 @@ function loadStats() {
     document.getElementById('kpi-conversion').textContent = conversion + '%';
     document.getElementById('kpi-conversion-delta').innerHTML = convPrevMM ? deltaHtml(parseFloat(conversion), parseFloat(convPrevMM), '% m/m') : '<span style="color:var(--text-muted)">— brak danych m/m</span>';
 
-    // Chart – setters
-    const setterNames = setters.map(r => (r.imie_nazwisko||'?').split(' ')[0]);
-    const setterVals = setters.map(r => parseInt(r.spotkania)||0);
-    makeBarChart('chart-setters', setterNames, setterVals, 'Spotkania');
-
-    // Chart – sources
-    const srcMap = {};
-    rows.forEach(r => { if(r.zrodlo) srcMap[r.zrodlo] = (srcMap[r.zrodlo]||0) + (parseInt(r.spotkania)||0); });
-    const srcLabels = Object.keys(srcMap);
-    if (srcLabels.length > 0) makeDoughnutChart('chart-sources', srcLabels, srcLabels.map(k => srcMap[k]));
-
     // Table – consultants
     const tbody = document.getElementById('consultants-body');
     if (consultants.length > 0) {
       tbody.innerHTML = consultants.map(r => {
         const spot = parseInt(r.spotkania)||0;
         const um = parseInt(r.umowy)||0;
-        const tSpot = parseInt(r.target_spotkania)||0;
         const tUm = parseInt(r.target_umowy)||0;
         const conv = spot > 0 ? ((um/spot)*100).toFixed(0)+'%' : '—';
         return `<tr>
@@ -1431,34 +1409,32 @@ function loadStats() {
       }).join('');
     }
 
-    // M/M chart
-    const monthsM = rows.filter(r => r.imie_nazwisko && parseInt(r.spotkania_poprz_mies) > 0).map(r => r.imie_nazwisko.split(' ')[0]);
-    if (monthsM.length > 0) {
-      makeBarChart('chart-mom', monthsM,
-        rows.filter(r => r.imie_nazwisko && parseInt(r.spotkania_poprz_mies)>0).map(r => parseInt(r.spotkania_poprz_mies)||0),
-        'Poprz. miesiąc');
+    // Chart – M/M team total
+    const totalPrevMM = rows.reduce((s,r) => s+(parseInt(r.spotkania_poprz_mies)||0),0);
+    const totalPrevYY = rows.reduce((s,r) => s+(parseInt(r.spotkania_poprz_rok)||0),0);
+    if (totalPrevMM > 0) {
+      makeBarChart('chart-mom',
+        ['Poprzedni miesiąc', 'Ten miesiąc'],
+        [totalPrevMM, totalMeetings],
+        'Spotkania zespołu');
     }
 
-    // R/R chart
-    const namesYY = rows.filter(r => parseInt(r.spotkania_poprz_rok) > 0).map(r => (r.imie_nazwisko||'?').split(' ')[0]);
-    if (namesYY.length > 0) {
-      const currVals = rows.filter(r => parseInt(r.spotkania_poprz_rok)>0).map(r => parseInt(r.spotkania)||0);
-      const prevVals = rows.filter(r => parseInt(r.spotkania_poprz_rok)>0).map(r => parseInt(r.spotkania_poprz_rok)||0);
+    // Chart – R/R team total
+    if (totalPrevYY > 0) {
       if (charts['chart-yoy']) charts['chart-yoy'].destroy();
       const ctx = document.getElementById('chart-yoy');
       if (ctx) {
         charts['chart-yoy'] = new Chart(ctx, {
           type: 'bar',
           data: {
-            labels: namesYY,
+            labels: ['Poprzedni rok', 'Ten rok'],
             datasets: [
-              { label: 'Ten rok', data: currVals, backgroundColor: TEAL50, borderColor: TEAL, borderWidth: 1.5, borderRadius: 5 },
-              { label: 'Rok poprzedni', data: prevVals, backgroundColor: 'rgba(90,133,144,0.35)', borderColor: '#5a8590', borderWidth: 1.5, borderRadius: 5 }
+              { label: 'Spotkania zespołu', data: [totalPrevYY, totalMeetings], backgroundColor: [TEAL20, TEAL50], borderColor: [TEAL, TEAL], borderWidth: 1.5, borderRadius: 5 }
             ]
           },
           options: { ...chartDefaults, scales: {
-            x: { ticks: { color:'#5a8590', font:{size:10}}, grid:{color:'rgba(0,196,192,0.07)'}},
-            y: { ticks: { color:'#5a8590', font:{size:10}}, grid:{color:'rgba(0,196,192,0.07)'}, beginAtZero:true}
+            x: { ticks: { color:'#2d5a65', font:{size:10}}, grid:{color:'rgba(0,196,192,0.10)'}},
+            y: { ticks: { color:'#2d5a65', font:{size:10}}, grid:{color:'rgba(0,196,192,0.10)'}, beginAtZero:true}
           }}
         });
       }
