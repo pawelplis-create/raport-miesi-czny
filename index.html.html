@@ -1,0 +1,1856 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raport Miesięczny – Zespół Wsparcia Sprzedaży</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --teal: #00c4c0;
+    --teal-dim: rgba(0,196,192,0.15);
+    --teal-glow: rgba(0,196,192,0.35);
+    --navy: #1a2e35;
+    --navy-mid: #223843;
+    --navy-light: #2d4a55;
+    --navy-lighter: #3a5c6a;
+    --text-primary: #e8f4f5;
+    --text-secondary: #8bb8c0;
+    --text-muted: #5a8590;
+    --border: rgba(0,196,192,0.18);
+    --card-bg: rgba(26,46,53,0.7);
+    --success: #2ecc8f;
+    --warning: #f0a500;
+    --danger: #e05555;
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--navy);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 10% 0%, rgba(0,196,192,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 90% 100%, rgba(0,196,192,0.05) 0%, transparent 55%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  .site-header {
+    position: relative;
+    z-index: 10;
+    background: linear-gradient(135deg, #0f1e24 0%, var(--navy) 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+  }
+  .header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 72px;
+    gap: 1.5rem;
+  }
+  .logo-block {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+  }
+  .logo-mark {
+    width: 36px;
+    height: 36px;
+    background: var(--teal);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .logo-mark svg { width: 22px; height: 22px; fill: var(--navy); }
+  .logo-text { font-family: var(--font-display); font-size: 1.15rem; font-weight: 800; letter-spacing: -0.02em; }
+  .logo-text span { color: var(--teal); }
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  #month-label {
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--teal);
+    background: var(--teal-dim);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 14px;
+  }
+  .refresh-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .refresh-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .refresh-btn svg { width: 14px; height: 14px; }
+
+  /* ── TABS ── */
+  .tab-bar {
+    position: relative;
+    z-index: 10;
+    background: rgba(15,30,36,0.95);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+  }
+  .tab-bar-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tab-bar-inner::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 20px;
+    height: 52px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-family: var(--font-display);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.2s;
+    flex-shrink: 0;
+  }
+  .tab-btn .tab-icon { font-size: 1rem; }
+  .tab-btn::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--teal);
+    transform: scaleX(0);
+    transition: transform 0.25s ease;
+  }
+  .tab-btn:hover { color: var(--text-secondary); }
+  .tab-btn.active { color: var(--teal); }
+  .tab-btn.active::after { transform: scaleX(1); }
+
+  /* ── MAIN ── */
+  .main-content {
+    position: relative;
+    z-index: 5;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── SECTION HEADING ── */
+  .section-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 0.8rem;
+    margin-bottom: 1.8rem;
+  }
+  .section-heading h2 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .section-heading .sub {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 300;
+  }
+
+  /* ── STAT CARDS ── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.4rem 1.6rem;
+    backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .stat-card:hover { border-color: var(--teal-glow); transform: translateY(-2px); }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--teal), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .stat-card:hover::before { opacity: 1; }
+  .stat-label {
+    font-size: 0.72rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 0.6rem;
+  }
+  .stat-value {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--text-primary);
+    margin-bottom: 0.4rem;
+  }
+  .stat-delta {
+    font-size: 0.78rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .stat-delta.pos { color: var(--success); }
+  .stat-delta.neg { color: var(--danger); }
+  .stat-delta.neu { color: var(--text-muted); }
+
+  /* ── DATA TABLE ── */
+  .table-wrap {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    backdrop-filter: blur(12px);
+    margin-bottom: 1.5rem;
+  }
+  .table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .table-title {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  .data-table thead th {
+    background: rgba(0,196,192,0.06);
+    padding: 0.75rem 1.2rem;
+    text-align: left;
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table tbody tr { border-bottom: 1px solid rgba(0,196,192,0.07); transition: background 0.15s; }
+  .data-table tbody tr:last-child { border-bottom: none; }
+  .data-table tbody tr:hover { background: rgba(0,196,192,0.04); }
+  .data-table td { padding: 0.8rem 1.2rem; color: var(--text-secondary); vertical-align: middle; }
+  .data-table td:first-child { color: var(--text-primary); font-weight: 500; }
+
+  /* ── PROGRESS BAR ── */
+  .progress-wrap { display: flex; align-items: center; gap: 10px; }
+  .progress-bar-track {
+    flex: 1;
+    height: 6px;
+    background: rgba(0,196,192,0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    min-width: 80px;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(90deg, var(--teal), #00e8e4);
+    transition: width 0.6s ease;
+  }
+  .progress-bar-fill.warn { background: linear-gradient(90deg, var(--warning), #ffc947); }
+  .progress-bar-fill.danger { background: linear-gradient(90deg, var(--danger), #ff7676); }
+  .progress-pct { font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; color: var(--teal); min-width: 38px; text-align: right; }
+
+  /* ── CHART CARD ── */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+    margin-bottom: 1.5rem;
+  }
+  @media (max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } }
+  .chart-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.4rem;
+    backdrop-filter: blur(12px);
+  }
+  .chart-card-title {
+    font-family: var(--font-display);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+  }
+  .chart-card canvas { max-height: 220px; }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+  .badge-teal { background: var(--teal-dim); color: var(--teal); border: 1px solid rgba(0,196,192,0.3); }
+  .badge-green { background: rgba(46,204,143,0.12); color: var(--success); border: 1px solid rgba(46,204,143,0.25); }
+  .badge-yellow { background: rgba(240,165,0,0.12); color: var(--warning); border: 1px solid rgba(240,165,0,0.25); }
+  .badge-red { background: rgba(224,85,85,0.12); color: var(--danger); border: 1px solid rgba(224,85,85,0.25); }
+
+  /* ── TEAM GRID ── */
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .member-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    backdrop-filter: blur(12px);
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .member-card:hover { border-color: var(--teal-glow); transform: translateY(-2px); }
+  .member-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--teal), #006c6b);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--navy);
+    margin-bottom: 0.3rem;
+  }
+  .member-name { font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; }
+  .member-role { font-size: 0.75rem; color: var(--text-muted); }
+  .member-etat { font-size: 0.72rem; color: var(--text-muted); }
+
+  /* ── IMPROVEMENTS LIST ── */
+  .improvements-list { display: flex; flex-direction: column; gap: 0.9rem; margin-bottom: 1.5rem; }
+  .improvement-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--teal);
+    border-radius: 10px;
+    padding: 1rem 1.4rem;
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    transition: border-color 0.2s;
+  }
+  .improvement-item:hover { border-color: var(--teal-glow); border-left-color: var(--teal); }
+  .improvement-icon { font-size: 1.3rem; line-height: 1; margin-top: 1px; }
+  .improvement-text { flex: 1; }
+  .improvement-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem; }
+  .improvement-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
+
+  /* ── CONFIG PANEL ── */
+  .config-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.8rem;
+    margin-bottom: 2rem;
+    backdrop-filter: blur(12px);
+  }
+  .config-section h3 {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 1.2rem;
+    color: var(--teal);
+  }
+  .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 700px) { .config-grid { grid-template-columns: 1fr; } }
+  .config-row { display: flex; flex-direction: column; gap: 0.4rem; }
+  .config-row label { font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+  .config-input {
+    background: rgba(0,196,192,0.06);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    padding: 0.55rem 0.9rem;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .config-input:focus { border-color: var(--teal); }
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--teal);
+    color: var(--navy);
+    border: none;
+    border-radius: 8px;
+    padding: 0.65rem 1.4rem;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    margin-top: 0.5rem;
+  }
+  .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+
+  /* ── LOADING / EMPTY ── */
+  .state-msg {
+    padding: 3rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+  .state-msg .icon { font-size: 2.5rem; margin-bottom: 0.8rem; display: block; }
+
+  /* ── MONTH SELECTOR ── */
+  .month-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.8rem;
+  }
+  .month-selector select {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    padding: 0.5rem 1rem;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    outline: none;
+    cursor: pointer;
+  }
+
+  /* ── FOOTER ── */
+  .site-footer {
+    position: relative;
+    z-index: 5;
+    text-align: center;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+  }
+
+  /* responsive */
+  @media (max-width: 600px) {
+    .main-content { padding: 1.2rem; }
+    .stat-value { font-size: 1.5rem; }
+    .chart-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo-block">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22" style="fill:none;stroke:#1a2e35;stroke-width:2"/></svg>
+      </div>
+      <div class="logo-text"><span>Booking</span>Host – Raport Miesięczny – Zespół Wsparcia Sprzedaży</div>
+    </div>
+    <div class="header-meta">
+      <span id="month-label">Ładowanie...</span>
+      <button class="refresh-btn" onclick="reloadAll()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Odśwież
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- TAB BAR -->
+<nav class="tab-bar">
+  <div class="tab-bar-inner">
+    <button class="tab-btn active" onclick="switchTab('stats')" data-tab="stats">
+      <span class="tab-icon">📊</span> Statystyki spotkań i umów
+    </button>
+    <button class="tab-btn" onclick="switchTab('retention')" data-tab="retention">
+      <span class="tab-icon">🔒</span> Retencja klientów
+    </button>
+    <button class="tab-btn" onclick="switchTab('longterm')" data-tab="longterm">
+      <span class="tab-icon">🏠</span> Długi termin
+    </button>
+    <button class="tab-btn" onclick="switchTab('improvements')" data-tab="improvements">
+      <span class="tab-icon">⚙️</span> Wdrożone usprawnienia
+    </button>
+    <button class="tab-btn" onclick="switchTab('team')" data-tab="team">
+      <span class="tab-icon">👥</span> Skład zespołu
+    </button>
+    <button class="tab-btn" onclick="switchTab('kpi')" data-tab="kpi">
+      <span class="tab-icon">🎯</span> KPI Paweł
+    </button>
+    <button class="tab-btn" onclick="switchTab('config')" data-tab="config">
+      <span class="tab-icon">🔗</span> Konfiguracja
+    </button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main-content">
+
+  <!-- ═══════════════════════════════════════════════
+       TAB 1 – STATYSTYKI SPOTKAŃ I UMÓW
+  ═══════════════════════════════════════════════ -->
+  <section class="tab-panel active" id="tab-stats">
+    <div class="section-heading">
+      <h2>Statystyki spotkań i umów</h2>
+      <span class="sub" id="stats-period">— ładowanie danych</span>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div class="stat-grid" id="stats-kpi">
+      <div class="stat-card">
+        <div class="stat-label">Spotkania odbyte w terenie</div>
+        <div class="stat-value" id="kpi-meetings">—</div>
+        <div class="stat-delta neu" id="kpi-meetings-delta">— vs poprz. miesiąc</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Realizacja targetu</div>
+        <div class="stat-value" id="kpi-target">—</div>
+        <div class="stat-delta neu" id="kpi-target-delta">— target</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Umowy CC</div>
+        <div class="stat-value" id="kpi-contracts">—</div>
+        <div class="stat-delta neu" id="kpi-contracts-delta">— vs poprz. miesiąc</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Konwersja spot. → umowa</div>
+        <div class="stat-value" id="kpi-conversion">—</div>
+        <div class="stat-delta neu" id="kpi-conversion-delta">— vs poprz. miesiąc</div>
+      </div>
+    </div>
+
+    <!-- CHARTS ROW -->
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-card-title">Spotkania odbyte w terenie per konsultant CC</div>
+        <canvas id="chart-setters"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Źródła spotkań</div>
+        <canvas id="chart-sources"></canvas>
+      </div>
+    </div>
+
+    <!-- UMOWY PER KONSULTANT -->
+    <div class="table-wrap">
+      <div class="table-header">
+        <div class="table-title">Umowy per konsultant CC</div>
+      </div>
+      <table class="data-table" id="table-consultants">
+        <thead>
+          <tr>
+            <th>Konsultant</th>
+            <th>Spotkania</th>
+            <th>Umowy</th>
+            <th>Konwersja</th>
+            <th>Realizacja targetu</th>
+          </tr>
+        </thead>
+        <tbody id="consultants-body">
+          <tr><td colspan="5" class="state-msg">Skonfiguruj URL Google Sheets w zakładce Konfiguracja</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- M/M & R/R -->
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-card-title">Porównanie miesiąc do miesiąca</div>
+        <canvas id="chart-mom"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Porównanie rok do roku</div>
+        <canvas id="chart-yoy"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       TAB 2 – RETENCJA KLIENTÓW
+  ═══════════════════════════════════════════════ -->
+  <section class="tab-panel" id="tab-retention">
+    <div class="section-heading">
+      <h2>Retencja klientów</h2>
+      <span class="sub" id="retention-period">— ładowanie danych</span>
+    </div>
+
+    <!-- KPI CARDS: 3 typy retencji -->
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
+      <div class="stat-card" style="border-top:3px solid var(--teal);">
+        <div class="stat-label">Aneks – czynsz gwarantowany</div>
+        <div class="stat-value" id="r-aneks">—</div>
+        <div class="stat-delta neu" id="r-aneks-d">mieszkań w tym miesiącu</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid var(--success);">
+        <div class="stat-label">Anulowanie wypowiedzenia</div>
+        <div class="stat-value" id="r-anulowanie">—</div>
+        <div class="stat-delta pos" id="r-anulowanie-d">klientów zatrzymanych</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid var(--warning);">
+        <div class="stat-label">Przejście na najem długoterminowy</div>
+        <div class="stat-value" id="r-lt">—</div>
+        <div class="stat-delta neu" id="r-lt-d">przeniesionych do HostRent</div>
+      </div>
+    </div>
+
+    <!-- WYKRES: trend retencji -->
+    <div class="chart-grid" style="grid-template-columns:1fr;">
+      <div class="chart-card">
+        <div class="chart-card-title">Trend retencji – miesiąc do miesiąca</div>
+        <canvas id="chart-retention-trend" style="max-height:260px;"></canvas>
+      </div>
+    </div>
+
+    <!-- TABELA: mieszkania przeniesione na czynsz gwarantowany -->
+    <div class="table-wrap">
+      <div class="table-header">
+        <div class="table-title">🏠 Mieszkania przeniesione na czynsz gwarantowany</div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Klient / Adres</th>
+            <th>Miasto</th>
+            <th>Czynsz gwarantowany / mies.</th>
+            <th>Data przejścia</th>
+            <th>Uwagi</th>
+          </tr>
+        </thead>
+        <tbody id="retention-cg-body">
+          <tr><td colspan="5" class="state-msg">Skonfiguruj URL Google Sheets w zakładce Konfiguracja</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PODSUMOWANIE: suma czynszów gwarantowanych per miasto -->
+    <div class="table-wrap">
+      <div class="table-header">
+        <div class="table-title">📍 Czynsz gwarantowany per miasto</div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Miasto</th>
+            <th>Liczba mieszkań</th>
+            <th>Suma czynszu gwarantowanego / mies.</th>
+          </tr>
+        </thead>
+        <tbody id="retention-city-body">
+          <tr><td colspan="3" class="state-msg">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       TAB 3 – DŁUGI TERMIN (HOSTRENT)
+  ═══════════════════════════════════════════════ -->
+  <section class="tab-panel" id="tab-longterm">
+    <div class="section-heading">
+      <h2>Długi termin – HostRent</h2>
+      <span class="sub" id="lt-period">— ładowanie danych</span>
+    </div>
+
+    <!-- SUMA UMÓW -->
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+      <div class="stat-card" style="border-top:3px solid var(--teal);">
+        <div class="stat-label">Łącznie umów LT</div>
+        <div class="stat-value" id="lt-total">—</div>
+        <div class="stat-delta neu" id="lt-total-d">wszystkie źródła</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Retencja (przeniesienie KT→LT)</div>
+        <div class="stat-value" id="lt-retention">—</div>
+        <div class="stat-delta neu" id="lt-retention-d">z retencji</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Nowe – CC</div>
+        <div class="stat-value" id="lt-new-cc">—</div>
+        <div class="stat-delta neu" id="lt-new-cc-d">konsultanci CC</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Nowe – Lead</div>
+        <div class="stat-value" id="lt-new-lead">—</div>
+        <div class="stat-delta neu" id="lt-new-lead-d">z leadów</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Nowe – inne źródła</div>
+        <div class="stat-value" id="lt-new-other">—</div>
+        <div class="stat-delta neu" id="lt-new-other-d">pozostałe</div>
+      </div>
+    </div>
+
+    <!-- WYKRESY -->
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-card-title">Podział umów wg źródła</div>
+        <canvas id="chart-lt-sources"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Trend umów LT – miesiąc do miesiąca</div>
+        <canvas id="chart-lt-trend"></canvas>
+      </div>
+    </div>
+
+    <!-- TABELA: podział per miasto per źródło -->
+    <div class="table-wrap">
+      <div class="table-header">
+        <div class="table-title">📍 Umowy LT per miasto i źródło</div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Miasto</th>
+            <th>Retencja</th>
+            <th>Nowe CC</th>
+            <th>Nowe Lead</th>
+            <th>Inne</th>
+            <th>Razem</th>
+          </tr>
+        </thead>
+        <tbody id="lt-city-body">
+          <tr><td colspan="6" class="state-msg">Skonfiguruj URL Google Sheets w zakładce Konfiguracja</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       TAB 4 – WDROŻONE USPRAWNIENIA
+  ═══════════════════════════════════════════════ -->
+  <section class="tab-panel" id="tab-improvements">
+    <div class="section-heading">
+      <h2>Wdrożone usprawnienia</h2>
+      <span class="sub" id="impr-period">— ładowanie danych</span>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Łącznie usprawnień</div>
+        <div class="stat-value" id="impr-total">—</div>
+        <div class="stat-delta neu">w tym miesiącu</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Procesy</div>
+        <div class="stat-value" id="impr-proc">—</div>
+        <div class="stat-delta neu">usprawnione procedury</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Narzędzia / IT</div>
+        <div class="stat-value" id="impr-tech">—</div>
+        <div class="stat-delta neu">wdrożone narzędzia</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Inicjatywy sprzedażowe</div>
+        <div class="stat-value" id="impr-sales">—</div>
+        <div class="stat-delta neu">nowe inicjatywy</div>
+      </div>
+    </div>
+
+    <div class="improvements-list" id="improvements-list">
+      <div class="state-msg"><span class="icon">⚙️</span>Skonfiguruj URL Google Sheets w zakładce Konfiguracja</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       TAB 5 – SKŁAD ZESPOŁU
+  ═══════════════════════════════════════════════ -->
+  <section class="tab-panel" id="tab-team">
+    <div class="section-heading">
+      <h2>Skład zespołu</h2>
+      <span class="sub" id="team-period">— ładowanie danych</span>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Łączna liczba osób</div>
+        <div class="stat-value" id="team-total">—</div>
+        <div class="stat-delta neu">aktywni pracownicy</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Konsultanci CC</div>
+        <div class="stat-value" id="team-setters">—</div>
+        <div class="stat-delta neu">krótki termin</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Nowi w miesiącu</div>
+        <div class="stat-value" id="team-new">—</div>
+        <div class="stat-delta pos">nowe zatrudnienia</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Zmiany kadrowe</div>
+        <div class="stat-value" id="team-changes">—</div>
+        <div class="stat-delta neu">odejścia / przeniesienia</div>
+      </div>
+    </div>
+
+    <!-- KRÓTKI TERMIN -->
+    <div style="font-family:var(--font-display);font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--teal);margin-bottom:1rem;display:flex;align-items:center;gap:0.6rem;">
+      <span style="width:20px;height:2px;background:var(--teal);display:inline-block;border-radius:2px;"></span>
+      Krótki termin – BookingHost
+      <span style="flex:1;height:1px;background:var(--border);display:inline-block;"></span>
+    </div>
+    <div class="team-grid" id="team-grid-kt" style="margin-bottom:2rem;">
+      <div class="state-msg" style="grid-column:1/-1"><span class="icon">👥</span>Skonfiguruj URL Google Sheets w zakładce Konfiguracja</div>
+    </div>
+
+    <!-- DŁUGI TERMIN -->
+    <div style="font-family:var(--font-display);font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--warning);margin-bottom:1rem;display:flex;align-items:center;gap:0.6rem;">
+      <span style="width:20px;height:2px;background:var(--warning);display:inline-block;border-radius:2px;"></span>
+      Długi termin – HostRent
+      <span style="flex:1;height:1px;background:var(--border);display:inline-block;"></span>
+    </div>
+    <div class="team-grid" id="team-grid-lt" style="margin-bottom:2rem;">
+      <div class="state-msg" style="grid-column:1/-1">—</div>
+    </div>
+
+    <!-- OPINIE -->
+    <div style="font-family:var(--font-display);font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--success);margin-bottom:1rem;display:flex;align-items:center;gap:0.6rem;">
+      <span style="width:20px;height:2px;background:var(--success);display:inline-block;border-radius:2px;"></span>
+      Opinie / Inne
+      <span style="flex:1;height:1px;background:var(--border);display:inline-block;"></span>
+    </div>
+    <div class="team-grid" id="team-grid-other" style="margin-bottom:2rem;">
+      <div class="state-msg" style="grid-column:1/-1">—</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       TAB 6 – KPI PAWEŁ
+  ═══════════════════════════════════════════════ -->
+  <section class="tab-panel" id="tab-kpi">
+    <div class="section-heading">
+      <h2>KPI Paweł</h2>
+      <span class="sub" id="kpi-period">— ładowanie danych</span>
+    </div>
+
+    <!-- MIESIĘCZNE KPI -->
+    <div style="margin-bottom:0.6rem;">
+      <div style="font-family:var(--font-display);font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--teal);margin-bottom:1rem;display:flex;align-items:center;gap:0.6rem;">
+        <span style="width:20px;height:2px;background:var(--teal);display:inline-block;border-radius:2px;"></span>
+        Cel miesięczny
+        <span style="flex:1;height:1px;background:var(--border);display:inline-block;"></span>
+      </div>
+    </div>
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-bottom:2rem;">
+      <div class="stat-card" style="border-top:3px solid var(--teal);">
+        <div class="stat-label">Spotkania odbyte w terenie</div>
+        <div style="display:flex;align-items:baseline;gap:0.5rem;margin-bottom:0.5rem;">
+          <div class="stat-value" id="kpi-p-m-meetings">—</div>
+          <div style="font-family:var(--font-display);font-size:1rem;color:var(--text-muted);font-weight:600;">/ <span id="kpi-p-m-meetings-target">—</span></div>
+        </div>
+        <div id="kpi-p-m-meetings-bar" style="margin-bottom:0.5rem;"></div>
+        <div class="stat-delta neu" id="kpi-p-m-meetings-d">cel miesięczny</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid var(--teal);">
+        <div class="stat-label">Podpisane umowy CC</div>
+        <div style="display:flex;align-items:baseline;gap:0.5rem;margin-bottom:0.5rem;">
+          <div class="stat-value" id="kpi-p-m-contracts">—</div>
+          <div style="font-family:var(--font-display);font-size:1rem;color:var(--text-muted);font-weight:600;">/ <span id="kpi-p-m-contracts-target">—</span></div>
+        </div>
+        <div id="kpi-p-m-contracts-bar" style="margin-bottom:0.5rem;"></div>
+        <div class="stat-delta neu" id="kpi-p-m-contracts-d">cel miesięczny</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid rgba(0,196,192,0.4);">
+        <div class="stat-label">Realizacja celu (spotkania)</div>
+        <div class="stat-value" id="kpi-p-m-meet-pct">—</div>
+        <div class="stat-delta neu" id="kpi-p-m-meet-pct-d">% realizacji</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid rgba(0,196,192,0.4);">
+        <div class="stat-label">Realizacja celu (umowy)</div>
+        <div class="stat-value" id="kpi-p-m-cont-pct">—</div>
+        <div class="stat-delta neu" id="kpi-p-m-cont-pct-d">% realizacji</div>
+      </div>
+    </div>
+
+    <!-- KWARTALNE KPI -->
+    <div style="margin-bottom:0.6rem;">
+      <div style="font-family:var(--font-display);font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--teal);margin-bottom:1rem;display:flex;align-items:center;gap:0.6rem;">
+        <span style="width:20px;height:2px;background:var(--teal);display:inline-block;border-radius:2px;"></span>
+        Cel kwartalny
+        <span style="flex:1;height:1px;background:var(--border);display:inline-block;"></span>
+      </div>
+    </div>
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-bottom:2rem;">
+      <div class="stat-card" style="border-top:3px solid var(--warning);">
+        <div class="stat-label">Spotkania odbyte w terenie (Q)</div>
+        <div style="display:flex;align-items:baseline;gap:0.5rem;margin-bottom:0.5rem;">
+          <div class="stat-value" id="kpi-p-q-meetings">—</div>
+          <div style="font-family:var(--font-display);font-size:1rem;color:var(--text-muted);font-weight:600;">/ <span id="kpi-p-q-meetings-target">—</span></div>
+        </div>
+        <div id="kpi-p-q-meetings-bar" style="margin-bottom:0.5rem;"></div>
+        <div class="stat-delta neu" id="kpi-p-q-meetings-d">cel kwartalny</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid var(--warning);">
+        <div class="stat-label">Podpisane umowy CC (Q)</div>
+        <div style="display:flex;align-items:baseline;gap:0.5rem;margin-bottom:0.5rem;">
+          <div class="stat-value" id="kpi-p-q-contracts">—</div>
+          <div style="font-family:var(--font-display);font-size:1rem;color:var(--text-muted);font-weight:600;">/ <span id="kpi-p-q-contracts-target">—</span></div>
+        </div>
+        <div id="kpi-p-q-contracts-bar" style="margin-bottom:0.5rem;"></div>
+        <div class="stat-delta neu" id="kpi-p-q-contracts-d">cel kwartalny</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid rgba(240,165,0,0.4);">
+        <div class="stat-label">Realizacja celu Q (spotkania)</div>
+        <div class="stat-value" id="kpi-p-q-meet-pct">—</div>
+        <div class="stat-delta neu" id="kpi-p-q-meet-pct-d">% realizacji kwartalnej</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid rgba(240,165,0,0.4);">
+        <div class="stat-label">Realizacja celu Q (umowy)</div>
+        <div class="stat-value" id="kpi-p-q-cont-pct">—</div>
+        <div class="stat-delta neu" id="kpi-p-q-cont-pct-d">% realizacji kwartalnej</div>
+      </div>
+    </div>
+
+    <!-- WYKRES porównawczy -->
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-card-title">Spotkania – cel vs wykonanie</div>
+        <canvas id="chart-kpi-meetings"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Umowy – cel vs wykonanie</div>
+        <canvas id="chart-kpi-contracts"></canvas>
+      </div>
+    </div>
+
+    <!-- NOTATKI / KONTEKST -->
+    <div class="table-wrap">
+      <div class="table-header">
+        <div class="table-title">Historia miesięczna</div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Miesiąc</th>
+            <th>Spotkania (cel)</th>
+            <th>Spotkania (wynik)</th>
+            <th>Realizacja spotk.</th>
+            <th>Umowy (cel)</th>
+            <th>Umowy (wynik)</th>
+            <th>Realizacja umów</th>
+          </tr>
+        </thead>
+        <tbody id="kpi-history-body">
+          <tr><td colspan="7" class="state-msg">Skonfiguruj URL arkusza KPI w zakładce Konfiguracja</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       TAB 7 – KONFIGURACJA
+  ═══════════════════════════════════════════════ -->
+  <section class="tab-panel" id="tab-config">
+    <div class="section-heading">
+      <h2>Konfiguracja</h2>
+      <span class="sub">— ustaw URL arkuszy Google Sheets i miesiąc</span>
+    </div>
+
+    <div class="config-section">
+      <h3>📅 Miesiąc raportu</h3>
+      <div class="config-grid">
+        <div class="config-row">
+          <label>Miesiąc i rok (np. "Marzec 2026")</label>
+          <input class="config-input" id="cfg-month" placeholder="Marzec 2026" />
+        </div>
+      </div>
+    </div>
+
+    <div class="config-section">
+      <h3>📊 Statystyki spotkań i umów</h3>
+      <div class="config-grid">
+        <div class="config-row">
+          <label>URL CSV (Google Sheets → Plik → Publikuj jako CSV)</label>
+          <input class="config-input" id="cfg-stats-url" placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=..." />
+        </div>
+      </div>
+    </div>
+
+    <div class="config-section">
+      <h3>🔒 Retencja klientów</h3>
+      <div class="config-grid">
+        <div class="config-row">
+          <label>URL CSV arkusza retencji</label>
+          <input class="config-input" id="cfg-retention-url" placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=..." />
+        </div>
+      </div>
+    </div>
+
+    <div class="config-section">
+      <h3>🏠 Długi termin – HostRent</h3>
+      <div class="config-grid">
+        <div class="config-row">
+          <label>URL CSV arkusza HostRent</label>
+          <input class="config-input" id="cfg-lt-url" placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=..." />
+        </div>
+      </div>
+    </div>
+
+    <div class="config-section">
+      <h3>🎯 KPI Paweł</h3>
+      <div class="config-grid">
+        <div class="config-row">
+          <label>URL CSV arkusza KPI Paweł</label>
+          <input class="config-input" id="cfg-kpi-url" placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=..." />
+        </div>
+      </div>
+    </div>
+
+    <div class="config-section">
+      <h3>⚙️ Wdrożone usprawnienia</h3>
+      <div class="config-grid">
+        <div class="config-row">
+          <label>URL CSV arkusza usprawnień</label>
+          <input class="config-input" id="cfg-impr-url" placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=..." />
+        </div>
+      </div>
+    </div>
+
+    <div class="config-section">
+      <h3>👥 Skład zespołu</h3>
+      <div class="config-grid">
+        <div class="config-row">
+          <label>URL CSV arkusza składu zespołu</label>
+          <input class="config-input" id="cfg-team-url" placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=..." />
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="saveConfig()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      Zapisz i załaduj dane
+    </button>
+
+    <div style="margin-top:2rem;">
+      <div class="config-section">
+        <h3>📋 Wymagana struktura arkuszy</h3>
+        <p style="font-size:0.82rem;color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">Każdy arkusz Google Sheets powinien mieć <strong style="color:var(--text-secondary)">nagłówki w pierwszym wierszu</strong>. Poniżej wymagane kolumny dla każdego arkusza:</p>
+
+        <div style="display:grid;gap:1rem;">
+          <div style="background:rgba(0,196,192,0.05);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;">
+            <div style="font-family:var(--font-display);font-size:0.8rem;font-weight:700;color:var(--teal);margin-bottom:0.5rem;">📊 Statystyki spotkań i umów</div>
+            <code style="font-size:0.75rem;color:var(--text-secondary);line-height:1.8;">
+              Kolumna A: <em>imie_nazwisko</em> (umawiacz lub konsultant)<br>
+              Kolumna B: <em>rola</em> (umawiacz / konsultant CC)<br>
+              Kolumna C: <em>spotkania</em> (liczba)<br>
+              Kolumna D: <em>umowy</em> (liczba, dla konsultantów CC)<br>
+              Kolumna E: <em>target_spotkania</em> (liczba)<br>
+              Kolumna F: <em>target_umowy</em> (liczba)<br>
+              Kolumna G: <em>zrodlo</em> (źródło leadów, opcjonalnie)<br>
+              Kolumna H: <em>spotkania_poprz_mies</em> (liczba, porównanie M/M)<br>
+              Kolumna I: <em>spotkania_poprz_rok</em> (liczba, porównanie R/R)
+            </code>
+          </div>
+
+          <div style="background:rgba(0,196,192,0.05);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;">
+            <div style="font-family:var(--font-display);font-size:0.8rem;font-weight:700;color:var(--teal);margin-bottom:0.5rem;">🔒 Retencja klientów</div>
+            <code style="font-size:0.75rem;color:var(--text-secondary);line-height:1.8;">
+              Kolumna A: <em>typ</em> (aneks_cg / anulowanie / lt)<br>
+              Kolumna B: <em>klient</em> lub <em>adres</em> (nazwa klienta / adres mieszkania)<br>
+              Kolumna C: <em>miasto</em><br>
+              Kolumna D: <em>czynsz_gwarantowany</em> (kwota zł/miesiąc – tylko dla aneks_cg)<br>
+              Kolumna E: <em>data</em> (DD.MM.YYYY – data przejścia / anulowania)<br>
+              Kolumna F: <em>uwagi</em> (opcjonalne)<br>
+              <em style="color:var(--teal)">Dla trendu: dodaj kolumnę <strong>miesiac</strong> + <strong>aneks_cg</strong> / <strong>anulowanie</strong> / <strong>przejscie_lt</strong> (liczby) – jeden wiersz na miesiąc</em>
+            </code>
+          </div>
+
+          <div style="background:rgba(0,196,192,0.05);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;">
+            <div style="font-family:var(--font-display);font-size:0.8rem;font-weight:700;color:var(--teal);margin-bottom:0.5rem;">🏠 Długi termin – HostRent</div>
+            <code style="font-size:0.75rem;color:var(--text-secondary);line-height:1.8;">
+              <strong>Wariant A (per rekord):</strong><br>
+              Kolumna A: <em>miasto</em><br>
+              Kolumna B: <em>zrodlo</em> (retencja / cc / lead / inne)<br>
+              Kolumna C: <em>liczba_umow</em> (liczba)<br>
+              Kolumna D: <em>miesiac</em> (opcjonalnie, do trendu)<br>
+              <br>
+              <strong>Wariant B (sumaryczny per miasto):</strong><br>
+              Kolumna A: <em>miasto</em><br>
+              Kolumna B: <em>retencja</em> (liczba)<br>
+              Kolumna C: <em>nowe_cc</em> (liczba)<br>
+              Kolumna D: <em>nowe_lead</em> (liczba)<br>
+              Kolumna E: <em>nowe_inne</em> (liczba)<br>
+              Kolumna F: <em>miesiac</em> (opcjonalnie, do trendu)
+            </code>
+          </div>
+
+          <div style="background:rgba(0,196,192,0.05);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;">
+            <div style="font-family:var(--font-display);font-size:0.8rem;font-weight:700;color:var(--teal);margin-bottom:0.5rem;">⚙️ Wdrożone usprawnienia</div>
+            <code style="font-size:0.75rem;color:var(--text-secondary);line-height:1.8;">
+              Kolumna A: <em>kategoria</em> (Proces / IT / Sprzedaż / HR / Inny)<br>
+              Kolumna B: <em>tytuł</em> (krótka nazwa)<br>
+              Kolumna C: <em>opis</em> (szczegóły)<br>
+              Kolumna D: <em>emoji</em> (opcjonalnie, np. 🚀)
+            </code>
+          </div>
+
+          <div style="background:rgba(0,196,192,0.05);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;">
+            <div style="font-family:var(--font-display);font-size:0.8rem;font-weight:700;color:var(--teal);margin-bottom:0.5rem;">🎯 KPI Paweł</div>
+            <code style="font-size:0.75rem;color:var(--text-secondary);line-height:1.8;">
+              Kolumna A: <em>miesiac</em> (np. Styczeń 2026)<br>
+              Kolumna B: <em>spotkania_cel</em> (liczba – miesięczny cel spotkań)<br>
+              Kolumna C: <em>spotkania_wynik</em> (liczba – faktyczna realizacja)<br>
+              Kolumna D: <em>umowy_cel</em> (liczba – miesięczny cel umów)<br>
+              Kolumna E: <em>umowy_wynik</em> (liczba – faktyczna realizacja)<br>
+              Kolumna F: <em>q_spotkania_cel</em> (opcjonalnie – kwartalny cel spotkań)<br>
+              Kolumna G: <em>q_spotkania_wynik</em> (opcjonalnie – kwartalny wynik)<br>
+              Kolumna H: <em>q_umowy_cel</em> (opcjonalnie – kwartalny cel umów)<br>
+              Kolumna I: <em>q_umowy_wynik</em> (opcjonalnie – kwartalny wynik umów)<br>
+              <em style="color:var(--teal)">Każdy wiersz = jeden miesiąc. Ostatni wiersz = bieżący miesiąc.</em>
+            </code>
+          </div>
+
+          <div style="background:rgba(0,196,192,0.05);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;">
+            <div style="font-family:var(--font-display);font-size:0.8rem;font-weight:700;color:var(--teal);margin-bottom:0.5rem;">👥 Skład zespołu</div>
+            <code style="font-size:0.75rem;color:var(--text-secondary);line-height:1.8;">
+              Kolumna A: <em>imie_nazwisko</em><br>
+              Kolumna B: <em>rola</em> (np. Konsultant CC, Konsultant LT, Team Leader)<br>
+              Kolumna C: <em>dzial</em> (KT = krótki termin / LT = długi termin / Opinie)<br>
+              Kolumna D: <em>etat</em> (pełny / 3/4 / połowa)<br>
+              Kolumna E: <em>status</em> (aktywny / nowy / odejście)<br>
+              Kolumna F: <em>miasto</em>
+            </code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  BookingHost sp. z o.o. &nbsp;·&nbsp; Raport wewnętrzny &nbsp;·&nbsp; Dane odświeżane z Google Sheets &nbsp;·&nbsp; <span id="footer-timestamp">—</span>
+</footer>
+
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════ -->
+<script>
+// ─── CONFIG ───────────────────────────────────────────
+const CFG_KEY = 'bh_raport_cfg';
+let cfg = {};
+let charts = {};
+
+// ─── DOMYŚLNA KONFIGURACJA (wbudowana na stałe) ───────
+const DEFAULT_CFG = {
+  month: 'Marzec 2026',
+  statsUrl: 'https://docs.google.com/spreadsheets/d/1gz9NIlnUsXQO4vA8BbxjQldl2CHOCpwXNrQiy9KYj2o/export?format=csv&gid=707842631',
+  retentionUrl: 'https://docs.google.com/spreadsheets/d/1gz9NIlnUsXQO4vA8BbxjQldl2CHOCpwXNrQiy9KYj2o/export?format=csv&gid=1525319043',
+  ltUrl: 'https://docs.google.com/spreadsheets/d/1gz9NIlnUsXQO4vA8BbxjQldl2CHOCpwXNrQiy9KYj2o/export?format=csv&gid=2017164815',
+  imprUrl: 'https://docs.google.com/spreadsheets/d/1gz9NIlnUsXQO4vA8BbxjQldl2CHOCpwXNrQiy9KYj2o/export?format=csv&gid=494696294',
+  teamUrl: 'https://docs.google.com/spreadsheets/d/1gz9NIlnUsXQO4vA8BbxjQldl2CHOCpwXNrQiy9KYj2o/export?format=csv&gid=208021221',
+  kpiUrl: 'https://docs.google.com/spreadsheets/d/1gz9NIlnUsXQO4vA8BbxjQldl2CHOCpwXNrQiy9KYj2o/export?format=csv&gid=1194534342',
+};
+
+function loadCfg() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(CFG_KEY) || '{}'); } catch(e) {}
+  // Połącz: zapisane ustawienia nadpisują domyślne
+  cfg = Object.assign({}, DEFAULT_CFG, saved);
+  document.getElementById('cfg-month').value = cfg.month;
+  document.getElementById('cfg-stats-url').value = cfg.statsUrl;
+  document.getElementById('cfg-retention-url').value = cfg.retentionUrl;
+  document.getElementById('cfg-lt-url').value = cfg.ltUrl;
+  document.getElementById('cfg-impr-url').value = cfg.imprUrl;
+  document.getElementById('cfg-team-url').value = cfg.teamUrl;
+  document.getElementById('cfg-kpi-url').value = cfg.kpiUrl;
+}
+
+function saveConfig() {
+  cfg = {
+    month: document.getElementById('cfg-month').value.trim() || 'Bieżący miesiąc',
+    statsUrl: document.getElementById('cfg-stats-url').value.trim(),
+    retentionUrl: document.getElementById('cfg-retention-url').value.trim(),
+    ltUrl: document.getElementById('cfg-lt-url').value.trim(),
+    imprUrl: document.getElementById('cfg-impr-url').value.trim(),
+    teamUrl: document.getElementById('cfg-team-url').value.trim(),
+    kpiUrl: document.getElementById('cfg-kpi-url').value.trim(),
+  };
+  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+  updateMonthLabels();
+  reloadAll();
+}
+
+function updateMonthLabels() {
+  const m = cfg.month || '—';
+  document.getElementById('month-label').textContent = m;
+  ['stats','retention','lt','impr','team','kpi'].forEach(k => {
+    const el = document.getElementById(k + '-period');
+    if(el) el.textContent = '— ' + m;
+  });
+  const imp = document.getElementById('impr-period');
+  if(imp) imp.textContent = '— ' + m;
+}
+
+// ─── TABS ─────────────────────────────────────────────
+function switchTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.querySelector('[data-tab="' + id + '"]').classList.add('active');
+}
+
+// ─── CSV FETCH ─────────────────────────────────────────
+function fetchCSV(url, callback) {
+  if (!url) { callback(null, 'Brak URL'); return; }
+  Papa.parse(url, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: r => callback(r.data, null),
+    error: e => callback(null, e.message)
+  });
+}
+
+// ─── CHART HELPERS ────────────────────────────────────
+const TEAL = '#00c4c0';
+const TEAL20 = 'rgba(0,196,192,0.2)';
+const TEAL50 = 'rgba(0,196,192,0.5)';
+const NAVY_MID = '#223843';
+const chartDefaults = {
+  responsive: true,
+  maintainAspectRatio: true,
+  plugins: { legend: { labels: { color: '#8bb8c0', font: { family: 'DM Sans', size: 11 } } } },
+};
+
+function makeBarChart(id, labels, data, label) {
+  if (charts[id]) charts[id].destroy();
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  charts[id] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label, data, backgroundColor: TEAL50, borderColor: TEAL, borderWidth: 1.5, borderRadius: 5 }]
+    },
+    options: {
+      ...chartDefaults,
+      scales: {
+        x: { ticks: { color: '#5a8590', font: { size: 10 } }, grid: { color: 'rgba(0,196,192,0.07)' } },
+        y: { ticks: { color: '#5a8590', font: { size: 10 } }, grid: { color: 'rgba(0,196,192,0.07)' }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+function makeLineChart(id, labels, datasets) {
+  if (charts[id]) charts[id].destroy();
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  charts[id] = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      ...chartDefaults,
+      scales: {
+        x: { ticks: { color: '#5a8590', font: { size: 10 } }, grid: { color: 'rgba(0,196,192,0.07)' } },
+        y: { ticks: { color: '#5a8590', font: { size: 10 } }, grid: { color: 'rgba(0,196,192,0.07)' }, beginAtZero: true }
+      },
+      elements: { line: { tension: 0.35 } }
+    }
+  });
+}
+
+function makeDoughnutChart(id, labels, data) {
+  if (charts[id]) charts[id].destroy();
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  const colors = ['#00c4c0','#2ecc8f','#f0a500','#e05555','#4a9eba','#7ecfce'];
+  charts[id] = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: colors.slice(0,labels.length), borderWidth: 0 }] },
+    options: { ...chartDefaults, cutout: '60%' }
+  });
+}
+
+// ─── DELTA HELPER ─────────────────────────────────────
+function deltaHtml(curr, prev, suffix='') {
+  if (prev == null || prev == 0) return '<span style="color:var(--text-muted)">—</span>';
+  const diff = curr - prev;
+  const pct = Math.round(diff/prev*100);
+  const cls = diff > 0 ? 'pos' : diff < 0 ? 'neg' : 'neu';
+  const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+  return `<span class="stat-delta ${cls}">${arrow} ${Math.abs(diff)}${suffix} (${Math.abs(pct)}%)</span>`;
+}
+
+function progressHtml(val, max) {
+  const pct = max > 0 ? Math.min(Math.round(val/max*100), 200) : 0;
+  const cls = pct >= 100 ? '' : pct >= 75 ? 'warn' : 'danger';
+  return `<div class="progress-wrap">
+    <div class="progress-bar-track"><div class="progress-bar-fill ${cls}" style="width:${Math.min(pct,100)}%"></div></div>
+    <span class="progress-pct">${pct}%</span>
+  </div>`;
+}
+
+function statusBadge(status) {
+  const s = (status||'').toLowerCase();
+  if (s.includes('zatrzym') || s.includes('uratow')) return `<span class="badge badge-green">✓ zatrzymano</span>`;
+  if (s.includes('utrac') || s.includes('odejście') || s.includes('strac')) return `<span class="badge badge-red">✗ utracono</span>`;
+  if (s.includes('toku') || s.includes('progress') || s.includes('negocj')) return `<span class="badge badge-yellow">⟳ w toku</span>`;
+  return `<span class="badge badge-teal">${status}</span>`;
+}
+
+// ─── STATS TAB ────────────────────────────────────────
+function loadStats() {
+  fetchCSV(cfg.statsUrl, (rows, err) => {
+    if (err || !rows || rows.length === 0) return;
+
+    const setters = rows.filter(r => (r.rola||'').toLowerCase().includes('umawiacz'));
+    const consultants = rows.filter(r => (r.rola||'').toLowerCase().includes('konsultant'));
+
+    // KPIs
+    const totalMeetings = rows.reduce((s,r) => s + (parseInt(r.spotkania)||0), 0);
+    const totalContracts = consultants.reduce((s,r) => s + (parseInt(r.umowy)||0), 0);
+    const targetM = rows.reduce((s,r) => s + (parseInt(r.target_spotkania)||0), 0);
+    const targetC = consultants.reduce((s,r) => s + (parseInt(r.target_umowy)||0), 0);
+    const prevMM = rows.reduce((s,r) => s + (parseInt(r.spotkania_poprz_mies)||0), 0);
+    const prevYY = rows.reduce((s,r) => s + (parseInt(r.spotkania_poprz_rok)||0), 0);
+    const conversion = totalMeetings > 0 ? ((totalContracts/totalMeetings)*100).toFixed(1) : 0;
+    const prevMeetingsMM = rows.reduce((s,r) => s + (parseInt(r.spotkania_poprz_mies)||0), 0);
+    const prevContractsMM = consultants.reduce((s,r) => s + (parseInt(r.umowy_poprz_mies)||0), 0);
+    const convPrevMM = prevMeetingsMM > 0 ? ((prevContractsMM/prevMeetingsMM)*100).toFixed(1) : null;
+
+    document.getElementById('kpi-meetings').textContent = totalMeetings;
+    document.getElementById('kpi-meetings-delta').innerHTML = deltaHtml(totalMeetings, prevMM, ' spotk.');
+    document.getElementById('kpi-contracts').textContent = totalContracts;
+    document.getElementById('kpi-contracts-delta').innerHTML = deltaHtml(totalContracts, targetC, ' cel: '+targetC);
+    document.getElementById('kpi-target').textContent = targetM > 0 ? Math.round(totalMeetings/targetM*100)+'%' : '—';
+    document.getElementById('kpi-target-delta').textContent = targetM > 0 ? `cel: ${targetM} spotkań` : '—';
+    document.getElementById('kpi-conversion').textContent = conversion + '%';
+    document.getElementById('kpi-conversion-delta').innerHTML = convPrevMM ? deltaHtml(parseFloat(conversion), parseFloat(convPrevMM), '% m/m') : '<span style="color:var(--text-muted)">— brak danych m/m</span>';
+
+    // Chart – setters
+    const setterNames = setters.map(r => (r.imie_nazwisko||'?').split(' ')[0]);
+    const setterVals = setters.map(r => parseInt(r.spotkania)||0);
+    makeBarChart('chart-setters', setterNames, setterVals, 'Spotkania');
+
+    // Chart – sources
+    const srcMap = {};
+    rows.forEach(r => { if(r.zrodlo) srcMap[r.zrodlo] = (srcMap[r.zrodlo]||0) + (parseInt(r.spotkania)||0); });
+    const srcLabels = Object.keys(srcMap);
+    if (srcLabels.length > 0) makeDoughnutChart('chart-sources', srcLabels, srcLabels.map(k => srcMap[k]));
+
+    // Table – consultants
+    const tbody = document.getElementById('consultants-body');
+    if (consultants.length > 0) {
+      tbody.innerHTML = consultants.map(r => {
+        const spot = parseInt(r.spotkania)||0;
+        const um = parseInt(r.umowy)||0;
+        const tSpot = parseInt(r.target_spotkania)||0;
+        const tUm = parseInt(r.target_umowy)||0;
+        const conv = spot > 0 ? ((um/spot)*100).toFixed(0)+'%' : '—';
+        return `<tr>
+          <td>${r.imie_nazwisko||'—'}</td>
+          <td>${spot}</td>
+          <td>${um}</td>
+          <td>${conv}</td>
+          <td>${progressHtml(um, tUm)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    // M/M chart
+    const monthsM = rows.filter(r => r.imie_nazwisko && parseInt(r.spotkania_poprz_mies) > 0).map(r => r.imie_nazwisko.split(' ')[0]);
+    if (monthsM.length > 0) {
+      makeBarChart('chart-mom', monthsM,
+        rows.filter(r => r.imie_nazwisko && parseInt(r.spotkania_poprz_mies)>0).map(r => parseInt(r.spotkania_poprz_mies)||0),
+        'Poprz. miesiąc');
+    }
+
+    // R/R chart
+    const namesYY = rows.filter(r => parseInt(r.spotkania_poprz_rok) > 0).map(r => (r.imie_nazwisko||'?').split(' ')[0]);
+    if (namesYY.length > 0) {
+      const currVals = rows.filter(r => parseInt(r.spotkania_poprz_rok)>0).map(r => parseInt(r.spotkania)||0);
+      const prevVals = rows.filter(r => parseInt(r.spotkania_poprz_rok)>0).map(r => parseInt(r.spotkania_poprz_rok)||0);
+      if (charts['chart-yoy']) charts['chart-yoy'].destroy();
+      const ctx = document.getElementById('chart-yoy');
+      if (ctx) {
+        charts['chart-yoy'] = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: namesYY,
+            datasets: [
+              { label: 'Ten rok', data: currVals, backgroundColor: TEAL50, borderColor: TEAL, borderWidth: 1.5, borderRadius: 5 },
+              { label: 'Rok poprzedni', data: prevVals, backgroundColor: 'rgba(90,133,144,0.35)', borderColor: '#5a8590', borderWidth: 1.5, borderRadius: 5 }
+            ]
+          },
+          options: { ...chartDefaults, scales: {
+            x: { ticks: { color:'#5a8590', font:{size:10}}, grid:{color:'rgba(0,196,192,0.07)'}},
+            y: { ticks: { color:'#5a8590', font:{size:10}}, grid:{color:'rgba(0,196,192,0.07)'}, beginAtZero:true}
+          }}
+        });
+      }
+    }
+  });
+}
+
+// ─── RETENTION TAB ────────────────────────────────────
+function loadRetention() {
+  fetchCSV(cfg.retentionUrl, (rows, err) => {
+    if (err || !rows || rows.length === 0) return;
+
+    // Count by type (kolumna: typ = "aneks_cg" | "anulowanie" | "lt")
+    const aneks = rows.filter(r => (r.typ||'').toLowerCase().includes('aneks') || (r.typ||'').toLowerCase().includes('cg')).length;
+    const anulowanie = rows.filter(r => (r.typ||'').toLowerCase().includes('anulowanie') || (r.typ||'').toLowerCase().includes('anuluj')).length;
+    const lt = rows.filter(r => (r.typ||'').toLowerCase().includes('lt') || (r.typ||'').toLowerCase().includes('długoterm') || (r.typ||'').toLowerCase().includes('dlugoterm')).length;
+
+    document.getElementById('r-aneks').textContent = aneks;
+    document.getElementById('r-aneks-d').textContent = `mieszkań w tym miesiącu`;
+    document.getElementById('r-anulowanie').textContent = anulowanie;
+    document.getElementById('r-anulowanie-d').textContent = `klientów zatrzymanych`;
+    document.getElementById('r-lt').textContent = lt;
+    document.getElementById('r-lt-d').textContent = `przeniesionych do HostRent`;
+
+    // Trend chart: rows with miesiac + aneks + anulowanie + lt columns (trend sheet)
+    // Fallback: aggregate current month only as single bar
+    const trendRows = rows.filter(r => r.miesiac);
+    if (trendRows.length > 1) {
+      const tLabels = trendRows.map(r => r.miesiac);
+      if (charts['chart-retention-trend']) charts['chart-retention-trend'].destroy();
+      const ctx = document.getElementById('chart-retention-trend');
+      if (ctx) {
+        charts['chart-retention-trend'] = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: tLabels,
+            datasets: [
+              { label: 'Aneks – czynsz gwarantowany', data: trendRows.map(r => parseInt(r.aneks_cg)||0), backgroundColor: 'rgba(0,196,192,0.55)', borderColor: TEAL, borderWidth: 1.5, borderRadius: 4 },
+              { label: 'Anulowanie wypowiedzenia', data: trendRows.map(r => parseInt(r.anulowanie)||0), backgroundColor: 'rgba(46,204,143,0.5)', borderColor: '#2ecc8f', borderWidth: 1.5, borderRadius: 4 },
+              { label: 'Przejście na LT', data: trendRows.map(r => parseInt(r.przejscie_lt)||0), backgroundColor: 'rgba(240,165,0,0.45)', borderColor: '#f0a500', borderWidth: 1.5, borderRadius: 4 }
+            ]
+          },
+          options: { ...chartDefaults, scales: {
+            x: { ticks:{color:'#5a8590',font:{size:10}}, grid:{color:'rgba(0,196,192,0.07)'}},
+            y: { ticks:{color:'#5a8590',font:{size:10}}, grid:{color:'rgba(0,196,192,0.07)'}, beginAtZero:true, stacked:false}
+          }}
+        });
+      }
+    }
+
+    // Table: mieszkania na czynsz gwarantowany
+    const cgRows = rows.filter(r => (r.typ||'').toLowerCase().includes('aneks') || (r.typ||'').toLowerCase().includes('cg'));
+    const cgBody = document.getElementById('retention-cg-body');
+    if (cgRows.length > 0) {
+      cgBody.innerHTML = cgRows.map(r => `<tr>
+        <td>${r.klient||r.adres||'—'}</td>
+        <td>${r.miasto||'—'}</td>
+        <td style="color:var(--teal);font-weight:600;">${r.czynsz_gwarantowany ? parseInt(r.czynsz_gwarantowany).toLocaleString('pl')+' zł' : '—'}</td>
+        <td>${r.data||'—'}</td>
+        <td style="font-size:0.8rem;color:var(--text-muted);">${r.uwagi||'—'}</td>
+      </tr>`).join('');
+    } else {
+      cgBody.innerHTML = '<tr><td colspan="5" class="state-msg">Brak danych o czynszach gwarantowanych w tym miesiącu</td></tr>';
+    }
+
+    // Summary per city
+    const cityMap = {};
+    cgRows.forEach(r => {
+      const city = r.miasto || 'Inne';
+      if (!cityMap[city]) cityMap[city] = { count: 0, sum: 0 };
+      cityMap[city].count++;
+      cityMap[city].sum += parseInt(r.czynsz_gwarantowany) || 0;
+    });
+    const cityBody = document.getElementById('retention-city-body');
+    const cities = Object.keys(cityMap);
+    if (cities.length > 0) {
+      cityBody.innerHTML = cities
+        .sort((a,b) => cityMap[b].sum - cityMap[a].sum)
+        .map(c => `<tr>
+          <td>${c}</td>
+          <td>${cityMap[c].count}</td>
+          <td style="color:var(--teal);font-weight:600;">${cityMap[c].sum.toLocaleString('pl')} zł</td>
+        </tr>`).join('');
+    } else {
+      cityBody.innerHTML = '<tr><td colspan="3" class="state-msg">—</td></tr>';
+    }
+  });
+}
+
+// ─── LONG TERM TAB ────────────────────────────────────
+function loadLongterm() {
+  fetchCSV(cfg.ltUrl, (rows, err) => {
+    if (err || !rows || rows.length === 0) return;
+
+    // Each row: miasto, zrodlo (retencja|cc|lead|inne), liczba_umow, miesiac(optional for trend)
+    const currentRows = rows.filter(r => !r.miesiac || r.miesiac === (cfg.month||''));
+    const dataRows = currentRows.length > 0 ? currentRows : rows;
+
+    const sumBy = (src) => dataRows.filter(r => (r.zrodlo||'').toLowerCase().includes(src)).reduce((s,r) => s+(parseInt(r.liczba_umow)||0),0);
+    const retVal  = sumBy('retencja') || dataRows.reduce((s,r) => s+(parseInt(r.retencja)||0),0);
+    const ccVal   = sumBy('cc')       || dataRows.reduce((s,r) => s+(parseInt(r.nowe_cc)||0),0);
+    const leadVal = sumBy('lead')     || dataRows.reduce((s,r) => s+(parseInt(r.nowe_lead)||0),0);
+    const otherVal= sumBy('inne')     || dataRows.reduce((s,r) => s+(parseInt(r.nowe_inne)||0),0);
+    const totalVal = retVal + ccVal + leadVal + otherVal;
+
+    document.getElementById('lt-total').textContent = totalVal;
+    document.getElementById('lt-total-d').textContent = 'wszystkie źródła';
+    document.getElementById('lt-retention').textContent = retVal;
+    document.getElementById('lt-new-cc').textContent = ccVal;
+    document.getElementById('lt-new-lead').textContent = leadVal;
+    document.getElementById('lt-new-other').textContent = otherVal;
+
+    // Doughnut – sources
+    makeDoughnutChart('chart-lt-sources',
+      ['Retencja KT→LT','Nowe CC','Nowe Lead','Inne'],
+      [retVal, ccVal, leadVal, otherVal]
+    );
+
+    // Trend – rows with miesiac column
+    const trendRows = rows.filter(r => r.miesiac);
+    const trendMonths = [...new Set(trendRows.map(r => r.miesiac))];
+    if (trendMonths.length > 1) {
+      const getMonthSum = (m, src) => trendRows.filter(r => r.miesiac===m && (r.zrodlo||'').toLowerCase().includes(src)).reduce((s,r) => s+(parseInt(r.liczba_umow)||0),0);
+      if (charts['chart-lt-trend']) charts['chart-lt-trend'].destroy();
+      const ctx = document.getElementById('chart-lt-trend');
+      if (ctx) {
+        charts['chart-lt-trend'] = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: trendMonths,
+            datasets: [{
+              label: 'Łącznie umów LT',
+              data: trendMonths.map(m => trendRows.filter(r => r.miesiac===m).reduce((s,r) => s+(parseInt(r.liczba_umow)||0),0)),
+              borderColor: TEAL, backgroundColor: TEAL20, fill: true, borderWidth: 2, tension: 0.35, pointRadius: 4
+            }]
+          },
+          options: { ...chartDefaults, scales: {
+            x: { ticks:{color:'#5a8590',font:{size:10}}, grid:{color:'rgba(0,196,192,0.07)'}},
+            y: { ticks:{color:'#5a8590',font:{size:10}}, grid:{color:'rgba(0,196,192,0.07)'}, beginAtZero:true}
+          }, elements:{line:{tension:0.35}} }
+        });
+      }
+    }
+
+    // Table per city per source
+    const cities = [...new Set(dataRows.map(r => r.miasto).filter(Boolean))];
+    const cityBody = document.getElementById('lt-city-body');
+    if (cities.length > 0) {
+      const getCity = (city, field) => dataRows.filter(r => r.miasto===city).reduce((s,r) => {
+        // support both zrodlo-style and column-style
+        if (r.zrodlo) {
+          if (field==='ret' && r.zrodlo.toLowerCase().includes('retencja')) return s+(parseInt(r.liczba_umow)||0);
+          if (field==='cc'  && r.zrodlo.toLowerCase().includes('cc'))       return s+(parseInt(r.liczba_umow)||0);
+          if (field==='lead'&& r.zrodlo.toLowerCase().includes('lead'))     return s+(parseInt(r.liczba_umow)||0);
+          if (field==='inne'&& r.zrodlo.toLowerCase().includes('inne'))     return s+(parseInt(r.liczba_umow)||0);
+          return s;
+        } else {
+          if (field==='ret')  return s+(parseInt(r.retencja)||0);
+          if (field==='cc')   return s+(parseInt(r.nowe_cc)||0);
+          if (field==='lead') return s+(parseInt(r.nowe_lead)||0);
+          if (field==='inne') return s+(parseInt(r.nowe_inne)||0);
+          return s;
+        }
+      }, 0);
+      cityBody.innerHTML = cities.map(c => {
+        const ret=getCity(c,'ret'), cc=getCity(c,'cc'), lead=getCity(c,'lead'), inne=getCity(c,'inne');
+        return `<tr>
+          <td>${c}</td>
+          <td>${ret||'—'}</td>
+          <td>${cc||'—'}</td>
+          <td>${lead||'—'}</td>
+          <td>${inne||'—'}</td>
+          <td style="font-weight:700;color:var(--teal)">${ret+cc+lead+inne}</td>
+        </tr>`;
+      }).join('');
+    }
+  });
+}
+
+// ─── IMPROVEMENTS TAB ─────────────────────────────────
+function loadImprovements() {
+  fetchCSV(cfg.imprUrl, (rows, err) => {
+    if (err || !rows || rows.length === 0) return;
+
+    const cats = { proc:0, tech:0, sales:0 };
+    rows.forEach(r => {
+      const k = (r.kategoria||'').toLowerCase();
+      if (k.includes('proces')) cats.proc++;
+      else if (k.includes('it') || k.includes('narzędzie') || k.includes('tech')) cats.tech++;
+      else if (k.includes('sprzedaż') || k.includes('sprzed')) cats.sales++;
+    });
+
+    document.getElementById('impr-total').textContent = rows.length;
+    document.getElementById('impr-proc').textContent = cats.proc;
+    document.getElementById('impr-tech').textContent = cats.tech;
+    document.getElementById('impr-sales').textContent = cats.sales;
+
+    const list = document.getElementById('improvements-list');
+    const iconMap = {Proces:'🔄',IT:'💻','Narzędzie':'🛠️',Sprzedaż:'📈',HR:'👤',Inny:'✅'};
+    list.innerHTML = rows.map(r => `
+      <div class="improvement-item">
+        <div class="improvement-icon">${r.emoji || iconMap[r.kategoria] || '✅'}</div>
+        <div class="improvement-text">
+          <div class="improvement-title">${r['tytuł']||r.tytul||'—'} <span class="badge badge-teal" style="margin-left:6px">${r.kategoria||''}</span></div>
+          <div class="improvement-desc">${r.opis||''}</div>
+        </div>
+      </div>`).join('');
+  });
+}
+
+// ─── TEAM TAB ─────────────────────────────────────────
+function loadTeam() {
+  fetchCSV(cfg.teamUrl, (rows, err) => {
+    if (err || !rows || rows.length === 0) return;
+
+    const active = rows.filter(r => (r.status||'aktywny').toLowerCase() !== 'odejście');
+    const ktPeople = active.filter(r => (r.dzial||r.rola||'').toLowerCase().includes('kt') || (r.dzial||'').toLowerCase().includes('krótki') || (r.dzial||'').toLowerCase().includes('krotki') || (r.rola||'').toLowerCase().includes('konsultant cc') || (r.rola||'').toLowerCase().includes('umawiacz'));
+    const ltPeople = active.filter(r => (r.dzial||r.rola||'').toLowerCase().includes('lt') || (r.dzial||'').toLowerCase().includes('długi') || (r.dzial||'').toLowerCase().includes('dlugi') || (r.rola||'').toLowerCase().includes('hostrent'));
+    const otherPeople = active.filter(r => {
+      const d = (r.dzial||'').toLowerCase();
+      const rol = (r.rola||'').toLowerCase();
+      return !ktPeople.includes(r) && !ltPeople.includes(r);
+    });
+    const newPpl = rows.filter(r => (r.status||'').toLowerCase().includes('nowy'));
+    const changes = rows.filter(r => (r.status||'').toLowerCase().includes('odejście') || (r.status||'').toLowerCase().includes('zmiana'));
+
+    document.getElementById('team-total').textContent = active.length;
+    document.getElementById('team-setters').textContent = ktPeople.length;
+    document.getElementById('team-new').textContent = newPpl.length;
+    document.getElementById('team-changes').textContent = changes.length;
+
+    function renderCards(people, gridId) {
+      const grid = document.getElementById(gridId);
+      if (people.length === 0) {
+        grid.innerHTML = '<div class="state-msg" style="grid-column:1/-1">Brak osób w tej grupie</div>';
+        return;
+      }
+      grid.innerHTML = people.map(r => {
+        const initials = (r.imie_nazwisko||'??').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+        const statusCls = (r.status||'').toLowerCase().includes('nowy') ? 'badge-green'
+                        : (r.status||'').toLowerCase().includes('odejście') ? 'badge-red' : 'badge-teal';
+        return `<div class="member-card">
+          <div class="member-avatar">${initials}</div>
+          <div class="member-name">${r.imie_nazwisko||'—'}</div>
+          <div class="member-role">${r.rola||'—'}</div>
+          <div class="member-etat">${r.etat ? 'Etat: '+r.etat : ''} ${r.miasto ? '· '+r.miasto : ''}</div>
+          <span class="badge ${statusCls}" style="margin-top:4px;width:fit-content">${r.status||'aktywny'}</span>
+        </div>`;
+      }).join('');
+    }
+
+    renderCards(ktPeople, 'team-grid-kt');
+    renderCards(ltPeople, 'team-grid-lt');
+    renderCards(otherPeople, 'team-grid-other');
+  });
+}
+
+// ─── KPI PAWEŁ TAB ────────────────────────────────────
+function loadKpi() {
+  fetchCSV(cfg.kpiUrl, (rows, err) => {
+    if (err || !rows || rows.length === 0) return;
+
+    // Rows structure: miesiac, spotkania_cel, spotkania_wynik, umowy_cel, umowy_wynik
+    // Last row = current month, rest = history
+    const current = rows[rows.length - 1];
+    const history = rows;
+
+    const mMeetTarget = parseInt(current.spotkania_cel) || 0;
+    const mMeetActual = parseInt(current.spotkania_wynik) || 0;
+    const mContTarget = parseInt(current.umowy_cel) || 0;
+    const mContActual = parseInt(current.umowy_wynik) || 0;
+
+    // Quarterly: sum all rows that are marked as this quarter (use all rows if no quarter column)
+    const qMeetTarget = rows.reduce((s,r) => s+(parseInt(r.q_spotkania_cel)||parseInt(r.spotkania_cel)||0),0);
+    const qMeetActual = rows.reduce((s,r) => s+(parseInt(r.q_spotkania_wynik)||parseInt(r.spotkania_wynik)||0),0);
+    const qContTarget = rows.reduce((s,r) => s+(parseInt(r.q_umowy_cel)||parseInt(r.umowy_cel)||0),0);
+    const qContActual = rows.reduce((s,r) => s+(parseInt(r.q_umowy_wynik)||parseInt(r.umowy_wynik)||0),0);
+
+    const mMeetPct = mMeetTarget > 0 ? Math.round(mMeetActual/mMeetTarget*100) : 0;
+    const mContPct = mContTarget > 0 ? Math.round(mContActual/mContTarget*100) : 0;
+    const qMeetPct = qMeetTarget > 0 ? Math.round(qMeetActual/qMeetTarget*100) : 0;
+    const qContPct = qContTarget > 0 ? Math.round(qContActual/qContTarget*100) : 0;
+
+    // Monthly
+    document.getElementById('kpi-p-m-meetings').textContent = mMeetActual;
+    document.getElementById('kpi-p-m-meetings-target').textContent = mMeetTarget;
+    document.getElementById('kpi-p-m-meetings-bar').innerHTML = progressHtml(mMeetActual, mMeetTarget);
+    document.getElementById('kpi-p-m-meetings-d').textContent = `cel: ${mMeetTarget} spotkań`;
+    document.getElementById('kpi-p-m-contracts').textContent = mContActual;
+    document.getElementById('kpi-p-m-contracts-target').textContent = mContTarget;
+    document.getElementById('kpi-p-m-contracts-bar').innerHTML = progressHtml(mContActual, mContTarget);
+    document.getElementById('kpi-p-m-contracts-d').textContent = `cel: ${mContTarget} umów`;
+    document.getElementById('kpi-p-m-meet-pct').textContent = mMeetPct + '%';
+    document.getElementById('kpi-p-m-meet-pct-d').innerHTML = mMeetPct >= 100
+      ? '<span class="stat-delta pos">✓ cel osiągnięty</span>'
+      : `<span class="stat-delta ${mMeetPct >= 75 ? 'neu' : 'neg'}">${mMeetPct}% realizacji</span>`;
+    document.getElementById('kpi-p-m-cont-pct').textContent = mContPct + '%';
+    document.getElementById('kpi-p-m-cont-pct-d').innerHTML = mContPct >= 100
+      ? '<span class="stat-delta pos">✓ cel osiągnięty</span>'
+      : `<span class="stat-delta ${mContPct >= 75 ? 'neu' : 'neg'}">${mContPct}% realizacji</span>`;
+
+    // Quarterly
+    document.getElementById('kpi-p-q-meetings').textContent = qMeetActual;
+    document.getElementById('kpi-p-q-meetings-target').textContent = qMeetTarget;
+    document.getElementById('kpi-p-q-meetings-bar').innerHTML = progressHtml(qMeetActual, qMeetTarget);
+    document.getElementById('kpi-p-q-meetings-d').textContent = `cel: ${qMeetTarget} spotkań w kwartale`;
+    document.getElementById('kpi-p-q-contracts').textContent = qContActual;
+    document.getElementById('kpi-p-q-contracts-target').textContent = qContTarget;
+    document.getElementById('kpi-p-q-contracts-bar').innerHTML = progressHtml(qContActual, qContTarget);
+    document.getElementById('kpi-p-q-contracts-d').textContent = `cel: ${qContTarget} umów w kwartale`;
+    document.getElementById('kpi-p-q-meet-pct').textContent = qMeetPct + '%';
+    document.getElementById('kpi-p-q-meet-pct-d').innerHTML = qMeetPct >= 100
+      ? '<span class="stat-delta pos">✓ cel kwartalny osiągnięty</span>'
+      : `<span class="stat-delta ${qMeetPct >= 75 ? 'neu' : 'neg'}">${qMeetPct}% realizacji</span>`;
+    document.getElementById('kpi-p-q-cont-pct').textContent = qContPct + '%';
+    document.getElementById('kpi-p-q-cont-pct-d').innerHTML = qContPct >= 100
+      ? '<span class="stat-delta pos">✓ cel kwartalny osiągnięty</span>'
+      : `<span class="stat-delta ${qContPct >= 75 ? 'neu' : 'neg'}">${qContPct}% realizacji</span>`;
+
+    // Charts
+    const labels = rows.map(r => r.miesiac || '?');
+    if (charts['chart-kpi-meetings']) charts['chart-kpi-meetings'].destroy();
+    const ctx1 = document.getElementById('chart-kpi-meetings');
+    if (ctx1) {
+      charts['chart-kpi-meetings'] = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Wynik', data: rows.map(r => parseInt(r.spotkania_wynik)||0), backgroundColor: TEAL50, borderColor: TEAL, borderWidth: 1.5, borderRadius: 5 },
+            { label: 'Cel', data: rows.map(r => parseInt(r.spotkania_cel)||0), backgroundColor: 'rgba(240,165,0,0.2)', borderColor: '#f0a500', borderWidth: 1.5, borderRadius: 5, borderDash: [4,4] }
+          ]
+        },
+        options: { ...chartDefaults, scales: {
+          x: { ticks:{color:'#5a8590',font:{size:10}}, grid:{color:'rgba(0,196,192,0.07)'}},
+          y: { ticks:{color:'#5a8590',font:{size:10}}, grid:{color:'rgba(0,196,192,0.07)'}, beginAtZero:true}
+        }}
+      });
+    }
+    if (charts['chart-kpi-contracts']) charts['chart-kpi-contracts'].destroy();
+    const ctx2 = document.getElementById('chart-kpi-contracts');
+    if (ctx2) {
+      charts['chart-kpi-contracts'] = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Wynik', data: rows.map(r => parseInt(r.umowy_wynik)||0), backgroundColor: TEAL50, borderColor: TEAL, borderWidth: 1.5, borderRadius: 5 },
+            { label: 'Cel', data: rows.map(r => parseInt(r.umowy_cel)||0), backgroundColor: 'rgba(240,165,0,0.2)', borderColor: '#f0a500', borderWidth: 1.5, borderRadius: 5 }
+          ]
+        },
+        options: { ...chartDefaults, scales: {
+          x: { ticks:{color:'#5a8590',font:{size:10}}, grid:{color:'rgba(0,196,192,0.07)'}},
+          y: { ticks:{color:'#5a8590',font:{size:10}}, grid:{color:'rgba(0,196,192,0.07)'}, beginAtZero:true}
+        }}
+      });
+    }
+
+    // History table
+    const tbody = document.getElementById('kpi-history-body');
+    tbody.innerHTML = rows.map(r => {
+      const mPct = parseInt(r.spotkania_cel) > 0 ? Math.round((parseInt(r.spotkania_wynik)||0)/(parseInt(r.spotkania_cel))*100) : 0;
+      const cPct = parseInt(r.umowy_cel) > 0 ? Math.round((parseInt(r.umowy_wynik)||0)/(parseInt(r.umowy_cel))*100) : 0;
+      return `<tr>
+        <td>${r.miesiac||'—'}</td>
+        <td>${r.spotkania_cel||'—'}</td>
+        <td>${r.spotkania_wynik||'—'}</td>
+        <td>${progressHtml(parseInt(r.spotkania_wynik)||0, parseInt(r.spotkania_cel)||0)}</td>
+        <td>${r.umowy_cel||'—'}</td>
+        <td>${r.umowy_wynik||'—'}</td>
+        <td>${progressHtml(parseInt(r.umowy_wynik)||0, parseInt(r.umowy_cel)||0)}</td>
+      </tr>`;
+    }).join('');
+  });
+}
+
+// ─── RELOAD ALL ───────────────────────────────────────
+function reloadAll() {
+  updateMonthLabels();
+  loadStats();
+  loadRetention();
+  loadLongterm();
+  loadImprovements();
+  loadTeam();
+  loadKpi();
+  document.getElementById('footer-timestamp').textContent =
+    'Ostatnia aktualizacja: ' + new Date().toLocaleString('pl-PL');
+}
+
+// ─── INIT ─────────────────────────────────────────────
+loadCfg();
+reloadAll();
+</script>
+</body>
+</html>
