@@ -1505,10 +1505,38 @@ function loadRetention() {
     if (err || !rows || rows.length === 0) return;
 
     // Oddziel wiersze trendów od wierszy danych
-    const trendAneksRows = rows.filter(r => (r.typ||'').toLowerCase().includes('trend_aneks'));
-    const trendAnulRows  = rows.filter(r => (r.typ||'').toLowerCase().includes('trend_anulowanie'));
-    const trendLtRows    = rows.filter(r => (r.typ||'').toLowerCase().includes('trend_lt'));
-    const dataRows = rows.filter(r => !(r.typ||'').toLowerCase().startsWith('trend_'));
+    // Trend może być w osobnych kolumnach G/H/I (typ, miesiac, liczba/spotkania)
+    // lub w wierszach z typem trend_*
+    const trendKey = Object.keys(rows[0]||{}).find(k => k.toLowerCase().includes('trend') || k.toLowerCase() === 'typ' && rows.some(r => (r[k]||'').includes('trend_')));
+    
+    // Zbierz wiersze trendu — z osobnych kolumn G/H/I
+    const allRows = rows;
+    const trendColTyp = Object.keys(rows[0]||{}).filter(k => k !== 'typ')[Object.keys(rows[0]||{}).filter(k => k !== 'typ').indexOf(Object.keys(rows[0]||{}).find((k,i) => i >= 6 && k.toLowerCase().includes('typ')))];
+    
+    // Szukaj kolumn trendu po indeksie (G=6, H=7, I=8)
+    const allKeys = Object.keys(rows[0]||{});
+    const trendTypKey = allKeys[6];   // kolumna G
+    const trendMiesKey = allKeys[7];  // kolumna H  
+    const trendLiczbaKey = allKeys[8]; // kolumna I
+
+    // Buduj dane trendu z kolumn G/H/I (pomijaj puste)
+    const trendMap = {}; // { miesiac: { aneks, anulowanie, lt } }
+    rows.forEach(r => {
+      const typ = (r[trendTypKey]||'').toLowerCase();
+      const mies = (r[trendMiesKey]||'').trim();
+      const val = parseInt(r[trendLiczbaKey])||0;
+      if (!typ || !mies) return;
+      if (!trendMap[mies]) trendMap[mies] = { aneks:0, anulowanie:0, lt:0 };
+      if (typ.includes('aneks') || typ.includes('cg')) trendMap[mies].aneks = val;
+      else if (typ.includes('anulowanie')) trendMap[mies].anulowanie = val;
+      else if (typ.includes('trend_lt')) trendMap[mies].lt = val;
+    });
+
+    // Wiersze danych (kolumny A-F, bez wierszy trendu)
+    const dataRows = rows.filter(r => {
+      const typ = (r.typ||'').toLowerCase();
+      return !typ.startsWith('trend_');
+    });
 
     // Count by type
     const aneks     = dataRows.filter(r => (r.typ||'').toLowerCase().includes('aneks') || (r.typ||'').toLowerCase().includes('cg')).length;
@@ -1522,38 +1550,26 @@ function loadRetention() {
     document.getElementById('r-anulowanie').textContent = anulowanie;
     document.getElementById('r-lt').textContent = lt;
 
-    // Trend chart z wierszy trend_*
-    // Pobierz unikalne miesiące z wierszy trendu
-    const allTrendMonths = [...new Set([
-      ...trendAneksRows.map(r => r.miesiac),
-      ...trendAnulRows.map(r => r.miesiac),
-      ...trendLtRows.map(r => r.miesiac)
-    ].filter(Boolean))];
-
-    // Posortuj miesiące chronologicznie
+    // Trend chart
     const MONTHS_ORDER = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
-    allTrendMonths.sort((a,b) => {
-      const [am, ay] = a.split(' '); const [bm, by] = b.split(' ');
+    const trendMonths = Object.keys(trendMap).sort((a,b) => {
+      const [am,ay] = a.split(' '); const [bm,by] = b.split(' ');
       if (ay !== by) return parseInt(ay) - parseInt(by);
       return MONTHS_ORDER.indexOf(am) - MONTHS_ORDER.indexOf(bm);
     });
 
-    if (allTrendMonths.length > 0) {
+    if (trendMonths.length > 0) {
       if (charts['chart-retention-trend']) charts['chart-retention-trend'].destroy();
       const ctx = document.getElementById('chart-retention-trend');
       if (ctx) {
-        const getVal = (trendArr, m) => {
-          const r = trendArr.find(r => r.miesiac === m);
-          return r ? (parseInt(r.liczba)||parseInt(r.spotkania)||parseInt(r.wartosc)||0) : 0;
-        };
         charts['chart-retention-trend'] = new Chart(ctx, {
           type: 'bar',
           data: {
-            labels: allTrendMonths,
+            labels: trendMonths,
             datasets: [
-              { label: 'Czynsz gwarantowany', data: allTrendMonths.map(m => getVal(trendAneksRows, m)), backgroundColor: 'rgba(0,196,192,0.55)', borderColor: TEAL, borderWidth: 1.5, borderRadius: 4 },
-              { label: 'Anulowanie wypowiedzenia', data: allTrendMonths.map(m => getVal(trendAnulRows, m)), backgroundColor: 'rgba(26,170,110,0.5)', borderColor: '#1aaa6e', borderWidth: 1.5, borderRadius: 4 },
-              { label: 'Przejście na LT', data: allTrendMonths.map(m => getVal(trendLtRows, m)), backgroundColor: 'rgba(212,135,10,0.45)', borderColor: '#d4870a', borderWidth: 1.5, borderRadius: 4 }
+              { label: 'Czynsz gwarantowany', data: trendMonths.map(m => trendMap[m].aneks), backgroundColor: 'rgba(0,196,192,0.55)', borderColor: TEAL, borderWidth: 1.5, borderRadius: 4 },
+              { label: 'Anulowanie wypowiedzenia', data: trendMonths.map(m => trendMap[m].anulowanie), backgroundColor: 'rgba(26,170,110,0.5)', borderColor: '#1aaa6e', borderWidth: 1.5, borderRadius: 4 },
+              { label: 'Przejście na LT', data: trendMonths.map(m => trendMap[m].lt), backgroundColor: 'rgba(212,135,10,0.45)', borderColor: '#d4870a', borderWidth: 1.5, borderRadius: 4 }
             ]
           },
           options: { ...chartDefaults, scales: {
