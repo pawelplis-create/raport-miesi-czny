@@ -1367,14 +1367,8 @@ function loadStats() {
   fetchCSV(cfg.statsUrl, (rows, err) => {
     if (err || !rows || rows.length === 0) return;
 
-    // Filtruj po miesiącu jeśli kolumna miesiac istnieje
-    const month = (cfg.month||'').trim().toLowerCase();
-    const miesiacKey = Object.keys(rows[0]||{}).find(k => k.toLowerCase().includes('miesiac') || k.toLowerCase().includes('miesi'));
-    const filtered = miesiacKey
-      ? rows.filter(r => (r[miesiacKey]||'').trim().toLowerCase() === month)
-      : rows;
-    // Jeśli filtrowanie nic nie zwróciło - użyj wszystkich wierszy
-    const activeRows = filtered.length > 0 ? filtered : rows;
+    // Użyj wszystkich wierszy
+    const activeRows = rows;
 
     // Wyciągnij specjalny wiersz R/R (rola = zespol_poprz_rok)
     const yyRow = activeRows.find(r => (r.rola||'').toLowerCase().includes('poprz_rok') || (r.rola||'').toLowerCase().includes('poprzedni_rok'));
