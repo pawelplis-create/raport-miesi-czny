@@ -1406,15 +1406,16 @@ function loadStats() {
     const tbody = document.getElementById('consultants-body');
     if (consultants.length > 0) {
       const sorted = [...consultants].sort((a, b) => {
-        const aUm = parseInt(a.umowy)||0, aTUm = parseInt(a.target_umowy)||0;
-        const bUm = parseInt(b.umowy)||0, bTUm = parseInt(b.target_umowy)||0;
-        const aPct = aTUm > 0 ? aUm/aTUm : (aUm > 0 ? 999 : -1);
-        const bPct = bTUm > 0 ? bUm/bTUm : (bUm > 0 ? 999 : -1);
+        const aSpot = parseInt(a.spotkania)||0, aTSpot = parseInt(a.target_spotkania)||0;
+        const bSpot = parseInt(b.spotkania)||0, bTSpot = parseInt(b.target_spotkania)||0;
+        const aPct = aTSpot > 0 ? aSpot/aTSpot : (aSpot > 0 ? 999 : -1);
+        const bPct = bTSpot > 0 ? bSpot/bTSpot : (bSpot > 0 ? 999 : -1);
         return bPct - aPct;
       });
       tbody.innerHTML = sorted.map((r, i) => {
         const spot = parseInt(r.spotkania)||0;
         const um = parseInt(r.umowy)||0;
+        const tSpot = parseInt(r.target_spotkania)||0;
         const tUm = parseInt(r.target_umowy)||0;
         const conv = spot > 0 ? ((um/spot)*100).toFixed(0)+'%' : '—';
         const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
@@ -1423,7 +1424,7 @@ function loadStats() {
           <td>${spot}</td>
           <td>${um}</td>
           <td>${conv}</td>
-          <td>${progressHtml(um, tUm)}</td>
+          <td>${progressHtml(spot, tSpot)}</td>
         </tr>`;
       }).join('');
     }
