@@ -1369,9 +1369,12 @@ function loadStats() {
 
     // Filtruj po miesiącu jeśli kolumna miesiac istnieje
     const month = (cfg.month||'').trim().toLowerCase();
-    const hasMonthCol = rows.some(r => r.miesiac);
+    // Sprawdź różne możliwe nazwy kolumny miesiac
+    const sampleRow = rows[0] || {};
+    const miesiacKey = Object.keys(sampleRow).find(k => k.toLowerCase().replace(/\s/g,'').includes('miesiac') || k.toLowerCase().replace(/\s/g,'').includes('miesi'));
+    const hasMonthCol = !!miesiacKey;
     const filtered = hasMonthCol
-      ? rows.filter(r => (r.miesiac||'').trim().toLowerCase() === month)
+      ? rows.filter(r => (r[miesiacKey]||'').trim().toLowerCase() === month)
       : rows;
 
     // Wyciągnij specjalny wiersz R/R (rola = zespol_poprz_rok)
