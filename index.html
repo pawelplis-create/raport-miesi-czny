@@ -1509,34 +1509,22 @@ function loadRetention() {
     // lub w wierszach z typem trend_*
     const trendKey = Object.keys(rows[0]||{}).find(k => k.toLowerCase().includes('trend') || k.toLowerCase() === 'typ' && rows.some(r => (r[k]||'').includes('trend_')));
     
-    // Zbierz wiersze trendu — z osobnych kolumn G/H/I
-    const allRows = rows;
-    const trendColTyp = Object.keys(rows[0]||{}).filter(k => k !== 'typ')[Object.keys(rows[0]||{}).filter(k => k !== 'typ').indexOf(Object.keys(rows[0]||{}).find((k,i) => i >= 6 && k.toLowerCase().includes('typ')))];
-    
-    // Szukaj kolumn trendu po indeksie (G=6, H=7, I=8)
-    const allKeys = Object.keys(rows[0]||{});
-    const trendTypKey = allKeys[6];   // kolumna G
-    const trendMiesKey = allKeys[7];  // kolumna H  
-    const trendLiczbaKey = allKeys[8]; // kolumna I
-
-    // Buduj dane trendu z kolumn G/H/I (pomijaj puste)
-    const trendMap = {}; // { miesiac: { aneks, anulowanie, lt } }
+    // Buduj dane trendu z kolumn trend_typ/trend_miesiac/trend_liczba
+    const trendMap = {};
+    const MONTHS_ORDER = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
     rows.forEach(r => {
-      const typ = (r[trendTypKey]||'').toLowerCase();
-      const mies = (r[trendMiesKey]||'').trim();
-      const val = parseInt(r[trendLiczbaKey])||0;
+      const typ = (r.trend_typ||'').toLowerCase();
+      const mies = (r.trend_miesiac||'').trim();
+      const val = parseInt(r.trend_liczba)||0;
       if (!typ || !mies) return;
       if (!trendMap[mies]) trendMap[mies] = { aneks:0, anulowanie:0, lt:0 };
       if (typ.includes('aneks') || typ.includes('cg')) trendMap[mies].aneks = val;
       else if (typ.includes('anulowanie')) trendMap[mies].anulowanie = val;
-      else if (typ.includes('trend_lt')) trendMap[mies].lt = val;
+      else if (typ === 'trend_lt' || typ.includes('_lt')) trendMap[mies].lt = val;
     });
 
-    // Wiersze danych (kolumny A-F, bez wierszy trendu)
-    const dataRows = rows.filter(r => {
-      const typ = (r.typ||'').toLowerCase();
-      return !typ.startsWith('trend_');
-    });
+    // Wiersze danych (kolumny A-F)
+    const dataRows = rows;
 
     // Count by type
     const aneks     = dataRows.filter(r => (r.typ||'').toLowerCase().includes('aneks') || (r.typ||'').toLowerCase().includes('cg')).length;
