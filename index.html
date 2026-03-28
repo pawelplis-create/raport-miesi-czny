@@ -1428,10 +1428,38 @@ function loadStats() {
       }).join('');
     }
 
+    // Wylicz dynamiczne nazwy miesięcy
+    const MONTHS_PL = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
+    function parseMiesiac(str) {
+      if (!str) return null;
+      const parts = str.trim().split(' ');
+      if (parts.length < 2) return null;
+      const mIdx = MONTHS_PL.findIndex(m => m.toLowerCase() === parts[0].toLowerCase());
+      const yr = parseInt(parts[1]);
+      if (mIdx < 0 || isNaN(yr)) return null;
+      return { mIdx, yr };
+    }
+    function prevMonthName(str) {
+      const p = parseMiesiac(str);
+      if (!p) return 'Poprzedni miesiąc';
+      const pm = p.mIdx === 0 ? 11 : p.mIdx - 1;
+      const py = p.mIdx === 0 ? p.yr - 1 : p.yr;
+      return `${MONTHS_PL[pm]} ${py}`;
+    }
+    function prevYearName(str) {
+      const p = parseMiesiac(str);
+      if (!p) return 'Poprzedni rok';
+      return `${MONTHS_PL[p.mIdx]} ${p.yr - 1}`;
+    }
+    const labelPrevMM = prevMonthName(cfg.month);
+    const labelCurrMM = cfg.month || 'Ten miesiąc';
+    const labelPrevYY = prevYearName(cfg.month);
+    const labelCurrYY = cfg.month || 'Ten rok';
+
     // Chart – M/M team total
     if (prevMM > 0) {
       makeBarChart('chart-mom',
-        ['Poprzedni miesiąc', 'Ten miesiąc'],
+        [labelPrevMM, labelCurrMM],
         [prevMM, totalMeetings],
         'Spotkania zespołu');
     }
@@ -1444,7 +1472,7 @@ function loadStats() {
         charts['chart-yoy'] = new Chart(ctx, {
           type: 'bar',
           data: {
-            labels: ['Poprzedni rok', 'Ten rok'],
+            labels: [labelPrevYY, labelCurrYY],
             datasets: [
               { label: 'Spotkania zespołu', data: [prevYYTotal, totalMeetings], backgroundColor: [TEAL20, TEAL50], borderColor: [TEAL, TEAL], borderWidth: 1.5, borderRadius: 5 }
             ]
