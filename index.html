@@ -1401,6 +1401,35 @@ function loadStats() {
     document.getElementById('kpi-contracts-delta').innerHTML = deltaHtml(totalContracts, targetC, ' cel: '+targetC);
     document.getElementById('kpi-target').textContent = targetM > 0 ? Math.round(totalMeetings/targetM*100)+'%' : '—';
     document.getElementById('kpi-target-delta').textContent = targetM > 0 ? `cel: ${targetM} spotkań` : '—';
+
+    // Wylicz dynamiczne nazwy miesięcy
+    const MONTHS_PL = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
+    function parseMiesiac(str) {
+      if (!str) return null;
+      const parts = str.trim().split(' ');
+      if (parts.length < 2) return null;
+      const mIdx = MONTHS_PL.findIndex(m => m.toLowerCase() === parts[0].toLowerCase());
+      const yr = parseInt(parts[1]);
+      if (mIdx < 0 || isNaN(yr)) return null;
+      return { mIdx, yr };
+    }
+    function prevMonthName(str) {
+      const p = parseMiesiac(str);
+      if (!p) return 'Poprzedni miesiąc';
+      const pm = p.mIdx === 0 ? 11 : p.mIdx - 1;
+      const py = p.mIdx === 0 ? p.yr - 1 : p.yr;
+      return `${MONTHS_PL[pm]} ${py}`;
+    }
+    function prevYearName(str) {
+      const p = parseMiesiac(str);
+      if (!p) return 'Poprzedni rok';
+      return `${MONTHS_PL[p.mIdx]} ${p.yr - 1}`;
+    }
+    const labelPrevMM = prevMonthName(cfg.month);
+    const labelCurrMM = cfg.month || 'Ten miesiąc';
+    const labelPrevYY = prevYearName(cfg.month);
+    const labelCurrYY = cfg.month || 'Ten rok';
+
     document.getElementById('kpi-conversion').textContent = conversion + '%';
     if (convPrevMM) {
       const diff = (parseFloat(conversion) - parseFloat(convPrevMM)).toFixed(1);
@@ -1439,34 +1468,6 @@ function loadStats() {
         </tr>`;
       }).join('');
     }
-
-    // Wylicz dynamiczne nazwy miesięcy
-    const MONTHS_PL = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
-    function parseMiesiac(str) {
-      if (!str) return null;
-      const parts = str.trim().split(' ');
-      if (parts.length < 2) return null;
-      const mIdx = MONTHS_PL.findIndex(m => m.toLowerCase() === parts[0].toLowerCase());
-      const yr = parseInt(parts[1]);
-      if (mIdx < 0 || isNaN(yr)) return null;
-      return { mIdx, yr };
-    }
-    function prevMonthName(str) {
-      const p = parseMiesiac(str);
-      if (!p) return 'Poprzedni miesiąc';
-      const pm = p.mIdx === 0 ? 11 : p.mIdx - 1;
-      const py = p.mIdx === 0 ? p.yr - 1 : p.yr;
-      return `${MONTHS_PL[pm]} ${py}`;
-    }
-    function prevYearName(str) {
-      const p = parseMiesiac(str);
-      if (!p) return 'Poprzedni rok';
-      return `${MONTHS_PL[p.mIdx]} ${p.yr - 1}`;
-    }
-    const labelPrevMM = prevMonthName(cfg.month);
-    const labelCurrMM = cfg.month || 'Ten miesiąc';
-    const labelPrevYY = prevYearName(cfg.month);
-    const labelCurrYY = cfg.month || 'Ten rok';
 
     // Chart – M/M team total
     if (prevMM > 0) {
