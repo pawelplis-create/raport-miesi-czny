@@ -687,11 +687,12 @@
           <tr>
             <th>Miasto</th>
             <th>Liczba mieszkań</th>
-            <th>Suma czynszu gwarantowanego / mies.</th>
+            <th>Suma / mies.</th>
+            <th>Średnia / mieszkanie</th>
           </tr>
         </thead>
         <tbody id="retention-city-body">
-          <tr><td colspan="3" class="state-msg">—</td></tr>
+          <tr><td colspan="4" class="state-msg">—</td></tr>
         </tbody>
       </table>
     </div>
@@ -1596,15 +1597,22 @@ function loadRetention() {
     const cityBody = document.getElementById('retention-city-body');
     const cities = Object.keys(cityMap);
     if (cities.length > 0) {
-      cityBody.innerHTML = cities
-        .sort((a,b) => cityMap[b].sum - cityMap[a].sum)
-        .map(c => `<tr>
-          <td>${c}</td>
-          <td>${cityMap[c].count}</td>
-          <td style="color:var(--teal);font-weight:600;">${cityMap[c].sum.toLocaleString('pl')} zł</td>
-        </tr>`).join('');
+      const sortedCities = cities.sort((a,b) => cityMap[b].sum - cityMap[a].sum);
+      const totalCount = sortedCities.reduce((s,c) => s + cityMap[c].count, 0);
+      const totalSum = sortedCities.reduce((s,c) => s + cityMap[c].sum, 0);
+      cityBody.innerHTML = sortedCities.map(c => `<tr>
+        <td>${c}</td>
+        <td>${cityMap[c].count}</td>
+        <td style="color:var(--teal);font-weight:600;">${cityMap[c].sum.toLocaleString('pl')} zł</td>
+        <td style="color:var(--text-secondary);">${Math.round(cityMap[c].sum / cityMap[c].count).toLocaleString('pl')} zł</td>
+      </tr>`).join('') + `<tr style="border-top:2px solid var(--border);background:rgba(0,196,192,0.04);">
+        <td style="font-weight:700;">Łącznie</td>
+        <td style="font-weight:700;">${totalCount}</td>
+        <td style="color:var(--teal);font-weight:700;">${totalSum.toLocaleString('pl')} zł</td>
+        <td style="color:var(--text-secondary);">${Math.round(totalSum / totalCount).toLocaleString('pl')} zł</td>
+      </tr>`;
     } else {
-      cityBody.innerHTML = '<tr><td colspan="3" class="state-msg">—</td></tr>';
+      cityBody.innerHTML = '<tr><td colspan="4" class="state-msg">—</td></tr>';
     }
   });
 }
