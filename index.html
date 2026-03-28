@@ -1367,20 +1367,31 @@ function loadStats() {
   fetchCSV(cfg.statsUrl, (rows, err) => {
     if (err || !rows || rows.length === 0) return;
 
-    const setters = rows.filter(r => (r.rola||'').toLowerCase().includes('umawiacz'));
-    const consultants = rows.filter(r => (r.rola||'').toLowerCase().includes('konsultant'));
+    // Filtruj po miesiącu jeśli kolumna miesiac istnieje
+    const month = (cfg.month||'').trim().toLowerCase();
+    const hasMonthCol = rows.some(r => r.miesiac);
+    const filtered = hasMonthCol
+      ? rows.filter(r => (r.miesiac||'').trim().toLowerCase() === month)
+      : rows;
+
+    // Wyciągnij specjalny wiersz R/R (rola = zespol_poprz_rok)
+    const yyRow = filtered.find(r => (r.rola||'').toLowerCase().includes('poprz_rok') || (r.rola||'').toLowerCase().includes('poprzedni_rok'));
+    const prevYYTotal = yyRow ? (parseInt(yyRow.spotkania)||0) : 0;
+
+    // Normalne wiersze (bez wiersza R/R)
+    const dataRows = filtered.filter(r => !(r.rola||'').toLowerCase().includes('poprz_rok') && !(r.rola||'').toLowerCase().includes('poprzedni_rok'));
+
+    const consultants = dataRows.filter(r => (r.rola||'').toLowerCase().includes('konsultant'));
 
     // KPIs
-    const totalMeetings = rows.reduce((s,r) => s + (parseInt(r.spotkania)||0), 0);
+    const totalMeetings = dataRows.reduce((s,r) => s + (parseInt(r.spotkania)||0), 0);
     const totalContracts = consultants.reduce((s,r) => s + (parseInt(r.umowy)||0), 0);
-    const targetM = rows.reduce((s,r) => s + (parseInt(r.target_spotkania)||0), 0);
+    const targetM = dataRows.reduce((s,r) => s + (parseInt(r.target_spotkania)||0), 0);
     const targetC = consultants.reduce((s,r) => s + (parseInt(r.target_umowy)||0), 0);
-    const prevMM = rows.reduce((s,r) => s + (parseInt(r.spotkania_poprz_mies)||0), 0);
-    const prevYY = rows.reduce((s,r) => s + (parseInt(r.spotkania_poprz_rok)||0), 0);
-    const conversion = totalMeetings > 0 ? ((totalContracts/totalMeetings)*100).toFixed(1) : 0;
-    const prevMeetingsMM = rows.reduce((s,r) => s + (parseInt(r.spotkania_poprz_mies)||0), 0);
+    const prevMM = dataRows.reduce((s,r) => s + (parseInt(r.spotkania_poprz_mies)||0), 0);
     const prevContractsMM = consultants.reduce((s,r) => s + (parseInt(r.umowy_poprz_mies)||0), 0);
-    const convPrevMM = prevMeetingsMM > 0 ? ((prevContractsMM/prevMeetingsMM)*100).toFixed(1) : null;
+    const conversion = totalMeetings > 0 ? ((totalContracts/totalMeetings)*100).toFixed(1) : 0;
+    const convPrevMM = prevMM > 0 && prevContractsMM > 0 ? ((prevContractsMM/prevMM)*100).toFixed(1) : null;
 
     document.getElementById('kpi-meetings').textContent = totalMeetings;
     document.getElementById('kpi-meetings-delta').innerHTML = deltaHtml(totalMeetings, prevMM, ' spotk.');
@@ -1418,17 +1429,15 @@ function loadStats() {
     }
 
     // Chart – M/M team total
-    const totalPrevMM = rows.reduce((s,r) => s+(parseInt(r.spotkania_poprz_mies)||0),0);
-    const totalPrevYY = rows.reduce((s,r) => s+(parseInt(r.spotkania_poprz_rok)||0),0);
-    if (totalPrevMM > 0) {
+    if (prevMM > 0) {
       makeBarChart('chart-mom',
         ['Poprzedni miesiąc', 'Ten miesiąc'],
-        [totalPrevMM, totalMeetings],
+        [prevMM, totalMeetings],
         'Spotkania zespołu');
     }
 
-    // Chart – R/R team total
-    if (totalPrevYY > 0) {
+    // Chart – R/R team total (jedna liczba z wiersza zespol_poprz_rok)
+    if (prevYYTotal > 0) {
       if (charts['chart-yoy']) charts['chart-yoy'].destroy();
       const ctx = document.getElementById('chart-yoy');
       if (ctx) {
@@ -1437,7 +1446,7 @@ function loadStats() {
           data: {
             labels: ['Poprzedni rok', 'Ten rok'],
             datasets: [
-              { label: 'Spotkania zespołu', data: [totalPrevYY, totalMeetings], backgroundColor: [TEAL20, TEAL50], borderColor: [TEAL, TEAL], borderWidth: 1.5, borderRadius: 5 }
+              { label: 'Spotkania zespołu', data: [prevYYTotal, totalMeetings], backgroundColor: [TEAL20, TEAL50], borderColor: [TEAL, TEAL], borderWidth: 1.5, borderRadius: 5 }
             ]
           },
           options: { ...chartDefaults, scales: {
