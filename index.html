@@ -1400,7 +1400,14 @@ function loadStats() {
     document.getElementById('kpi-target').textContent = targetM > 0 ? Math.round(totalMeetings/targetM*100)+'%' : '—';
     document.getElementById('kpi-target-delta').textContent = targetM > 0 ? `cel: ${targetM} spotkań` : '—';
     document.getElementById('kpi-conversion').textContent = conversion + '%';
-    document.getElementById('kpi-conversion-delta').innerHTML = convPrevMM ? deltaHtml(parseFloat(conversion), parseFloat(convPrevMM), '% m/m') : '<span style="color:var(--text-muted)">— brak danych m/m</span>';
+    if (convPrevMM) {
+      const diff = (parseFloat(conversion) - parseFloat(convPrevMM)).toFixed(1);
+      const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+      const cls = diff > 0 ? 'pos' : diff < 0 ? 'neg' : 'neu';
+      document.getElementById('kpi-conversion-delta').innerHTML = `<span class="stat-delta ${cls}">${arrow} ${Math.abs(diff)}pp vs ${labelPrevMM}</span>`;
+    } else {
+      document.getElementById('kpi-conversion-delta').innerHTML = '<span style="color:var(--text-muted)">— brak danych m/m</span>';
+    }
 
     // Table – consultants sorted by % target desc
     const tbody = document.getElementById('consultants-body');
@@ -1408,9 +1415,11 @@ function loadStats() {
       const sorted = [...consultants].sort((a, b) => {
         const aSpot = parseInt(a.spotkania)||0, aTSpot = parseInt(a.target_spotkania)||0;
         const bSpot = parseInt(b.spotkania)||0, bTSpot = parseInt(b.target_spotkania)||0;
-        const aPct = aTSpot > 0 ? aSpot/aTSpot : (aSpot > 0 ? 999 : -1);
-        const bPct = bTSpot > 0 ? bSpot/bTSpot : (bSpot > 0 ? 999 : -1);
-        return bPct - aPct;
+        // Brak targetu → na sam dół
+        if (aTSpot === 0 && bTSpot === 0) return 0;
+        if (aTSpot === 0) return 1;
+        if (bTSpot === 0) return -1;
+        return (bSpot/bTSpot) - (aSpot/aTSpot);
       });
       tbody.innerHTML = sorted.map((r, i) => {
         const spot = parseInt(r.spotkania)||0;
