@@ -1539,11 +1539,11 @@ function loadRetention() {
     document.getElementById('r-lt').textContent = lt;
 
     // Trend chart
-    const MONTHS_ORDER = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
     const trendMonths = Object.keys(trendMap).sort((a,b) => {
+      const MONTHS = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
       const [am,ay] = a.split(' '); const [bm,by] = b.split(' ');
       if (ay !== by) return parseInt(ay) - parseInt(by);
-      return MONTHS_ORDER.indexOf(am) - MONTHS_ORDER.indexOf(bm);
+      return MONTHS.indexOf(am) - MONTHS.indexOf(bm);
     });
 
     if (trendMonths.length > 0) {
