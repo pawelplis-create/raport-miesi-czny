@@ -577,6 +577,12 @@
       <span class="sub" id="stats-period">— ładowanie danych</span>
     </div>
 
+    <!-- KOMENTARZ MIESIĄCA -->
+    <div id="comment-box" style="display:none;background:linear-gradient(135deg,rgba(0,196,192,0.06),rgba(26,46,53,0.03));border:1px solid var(--border);border-left:4px solid var(--teal);border-radius:12px;padding:1.2rem 1.6rem;margin-bottom:1.8rem;">
+      <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--teal);margin-bottom:0.5rem;">💬 Komentarz do miesiąca</div>
+      <div id="comment-text" style="font-size:0.95rem;color:var(--text-primary);line-height:1.7;"></div>
+    </div>
+
     <!-- KPI CARDS -->
     <div class="stat-grid" id="stats-kpi">
       <div class="stat-card">
@@ -598,6 +604,16 @@
         <div class="stat-label">Konwersja spot. → umowa</div>
         <div class="stat-value" id="kpi-conversion">—</div>
         <div class="stat-delta neu" id="kpi-conversion-delta">— vs poprz. miesiąc</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Leady (formularz + FB)</div>
+        <div class="stat-value" id="kpi-leads">—</div>
+        <div class="stat-delta neu" id="kpi-leads-delta">łącznie w miesiącu</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Połączenia zespołu</div>
+        <div class="stat-value" id="kpi-calls">—</div>
+        <div class="stat-delta neu" id="kpi-calls-delta">przychodzące + wychodzące</div>
       </div>
     </div>
 
@@ -708,7 +724,7 @@
             <th>Klient / Adres</th>
             <th>Miasto</th>
             <th>Czynsz gwarantowany / mies.</th>
-            <th>Data przejścia</th>
+            <th>Data podpisania aneksu</th>
             <th>Uwagi</th>
           </tr>
         </thead>
@@ -1440,7 +1456,48 @@ function loadStats() {
       document.getElementById('kpi-conversion-delta').innerHTML = '<span style="color:var(--text-muted)">— brak danych m/m</span>';
     }
 
-    // Table – consultants sorted by % target desc
+    // Leads and calls (sumy z wierszy - szukaj specjalnych wierszy lub kolumn)
+    const totalLeadsForm = activeRows.reduce((s,r) => s+(parseInt(r.leady_formularz)||0), 0);
+    const totalLeadsFB   = activeRows.reduce((s,r) => s+(parseInt(r.leady_facebook)||0), 0);
+    const totalLeads = totalLeadsForm + totalLeadsFB;
+    const totalCallsIn  = activeRows.reduce((s,r) => s+(parseInt(r.polaczenia_przych)||0), 0);
+    const totalCallsOut = activeRows.reduce((s,r) => s+(parseInt(r.polaczenia_wychodzace)||0), 0);
+    const totalCalls = totalCallsIn + totalCallsOut;
+
+    if (document.getElementById('kpi-leads')) {
+      document.getElementById('kpi-leads').textContent = totalLeads > 0 ? totalLeads : '—';
+      document.getElementById('kpi-leads-delta').textContent = totalLeads > 0 ? `${totalLeadsForm} formularz · ${totalLeadsFB} FB` : 'dodaj kolumny leady_formularz, leady_facebook';
+    }
+    if (document.getElementById('kpi-calls')) {
+      document.getElementById('kpi-calls').textContent = totalCalls > 0 ? totalCalls : '—';
+      document.getElementById('kpi-calls-delta').textContent = totalCalls > 0 ? `${totalCallsIn} przych. · ${totalCallsOut} wychodzące` : 'dodaj kolumny polaczenia_przych, polaczenia_wychodzace';
+    }
+
+    // Komentarz miesiąca (szukaj wiersza z rolą "komentarz")
+    const commentRow = activeRows.find(r => (r.rola||'').toLowerCase().includes('komentarz') || (r.imie_nazwisko||'').toLowerCase().includes('komentarz'));
+    const commentBox = document.getElementById('comment-box');
+    if (commentRow && commentBox) {
+      const txt = commentRow.uwagi || commentRow.opis || commentRow.spotkania || '';
+      if (txt) {
+        commentBox.style.display = 'block';
+        document.getElementById('comment-text').textContent = txt;
+      }
+    }
+
+    // Leads and calls - alternative: single summary row
+    const summaryRow = activeRows.find(r => (r.rola||'').toLowerCase().includes('suma_zespol') || (r.imie_nazwisko||'').toLowerCase().includes('podsumowanie'));
+    if (summaryRow) {
+      const sl = (parseInt(summaryRow.leady_formularz)||0) + (parseInt(summaryRow.leady_facebook)||0);
+      const sc = (parseInt(summaryRow.polaczenia_przych)||0) + (parseInt(summaryRow.polaczenia_wychodzace)||0);
+      if (sl > 0 && document.getElementById('kpi-leads')) {
+        document.getElementById('kpi-leads').textContent = sl;
+        document.getElementById('kpi-leads-delta').textContent = `${parseInt(summaryRow.leady_formularz)||0} formularz · ${parseInt(summaryRow.leady_facebook)||0} FB`;
+      }
+      if (sc > 0 && document.getElementById('kpi-calls')) {
+        document.getElementById('kpi-calls').textContent = sc;
+        document.getElementById('kpi-calls-delta').textContent = `${parseInt(summaryRow.polaczenia_przych)||0} przych. · ${parseInt(summaryRow.polaczenia_wychodzace)||0} wychodzące`;
+      }
+    }
     const tbody = document.getElementById('consultants-body');
     if (consultants.length > 0) {
       const sorted = [...consultants].sort((a, b) => {
@@ -1467,6 +1524,19 @@ function loadStats() {
           <td>${progressHtml(spot, tSpot)}</td>
         </tr>`;
       }).join('');
+
+      // Wiersz sumy
+      const sumSpot = sorted.reduce((s,r) => s+(parseInt(r.spotkania)||0), 0);
+      const sumUm = sorted.reduce((s,r) => s+(parseInt(r.umowy)||0), 0);
+      const sumConv = sumSpot > 0 ? ((sumUm/sumSpot)*100).toFixed(0)+'%' : '—';
+      const sumTSpot = sorted.reduce((s,r) => s+(parseInt(r.target_spotkania)||0), 0);
+      tbody.innerHTML += `<tr style="border-top:2px solid var(--border);background:rgba(0,196,192,0.04);">
+        <td style="font-weight:700;">Suma zespołu</td>
+        <td style="font-weight:700;">${sumSpot}</td>
+        <td style="font-weight:700;">${sumUm}</td>
+        <td style="font-weight:700;">${sumConv}</td>
+        <td>${progressHtml(sumSpot, sumTSpot)}</td>
+      </tr>`;
     }
 
     // Chart – M/M team total
@@ -1769,11 +1839,13 @@ function loadTeam() {
         const initials = (r.imie_nazwisko||'??').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
         const statusCls = (r.status||'').toLowerCase().includes('nowy') ? 'badge-green'
                         : (r.status||'').toLowerCase().includes('odejście') ? 'badge-red' : 'badge-teal';
+        const dataZatr = r.data_zatrudnienia || r.zatrudnienie || '';
         return `<div class="member-card">
           <div class="member-avatar">${initials}</div>
           <div class="member-name">${r.imie_nazwisko||'—'}</div>
           <div class="member-role">${r.rola||'—'}</div>
           <div class="member-etat">${r.etat ? 'Etat: '+r.etat : ''} ${r.miasto ? '· '+r.miasto : ''}</div>
+          ${dataZatr ? `<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">od ${dataZatr}</div>` : ''}
           <span class="badge ${statusCls}" style="margin-top:4px;width:fit-content">${r.status||'aktywny'}</span>
         </div>`;
       }).join('');
