@@ -1369,20 +1369,19 @@ function loadStats() {
 
     // Filtruj po miesiącu jeśli kolumna miesiac istnieje
     const month = (cfg.month||'').trim().toLowerCase();
-    // Sprawdź różne możliwe nazwy kolumny miesiac
-    const sampleRow = rows[0] || {};
-    const miesiacKey = Object.keys(sampleRow).find(k => k.toLowerCase().replace(/\s/g,'').includes('miesiac') || k.toLowerCase().replace(/\s/g,'').includes('miesi'));
-    const hasMonthCol = !!miesiacKey;
-    const filtered = hasMonthCol
+    const miesiacKey = Object.keys(rows[0]||{}).find(k => k.toLowerCase().includes('miesiac') || k.toLowerCase().includes('miesi'));
+    const filtered = miesiacKey
       ? rows.filter(r => (r[miesiacKey]||'').trim().toLowerCase() === month)
       : rows;
+    // Jeśli filtrowanie nic nie zwróciło - użyj wszystkich wierszy
+    const activeRows = filtered.length > 0 ? filtered : rows;
 
     // Wyciągnij specjalny wiersz R/R (rola = zespol_poprz_rok)
-    const yyRow = filtered.find(r => (r.rola||'').toLowerCase().includes('poprz_rok') || (r.rola||'').toLowerCase().includes('poprzedni_rok'));
+    const yyRow = activeRows.find(r => (r.rola||'').toLowerCase().includes('poprz_rok') || (r.rola||'').toLowerCase().includes('poprzedni_rok'));
     const prevYYTotal = yyRow ? (parseInt(yyRow.spotkania)||0) : 0;
 
     // Normalne wiersze (bez wiersza R/R)
-    const dataRows = filtered.filter(r => !(r.rola||'').toLowerCase().includes('poprz_rok') && !(r.rola||'').toLowerCase().includes('poprzedni_rok'));
+    const dataRows = activeRows.filter(r => !(r.rola||'').toLowerCase().includes('poprz_rok') && !(r.rola||'').toLowerCase().includes('poprzedni_rok'));
 
     const consultants = dataRows.filter(r => (r.rola||'').toLowerCase().includes('konsultant'));
 
