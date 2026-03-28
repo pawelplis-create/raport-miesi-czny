@@ -530,6 +530,9 @@
     </div>
     <div class="header-meta">
       <span id="month-label">Ładowanie...</span>
+      <button id="pdf-btn" class="refresh-btn" onclick="exportPDF()" style="background:var(--teal);color:var(--navy);border-color:var(--teal);font-weight:600;">
+        📄 Eksportuj PDF
+      </button>
       <button class="refresh-btn" onclick="reloadAll()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
         Odśwież
@@ -1976,6 +1979,131 @@ function loadKpi() {
   });
 }
 
+// ─── ANIMATED COUNTER ─────────────────────────────────
+function animateCounter(el, target, duration=800, suffix='') {
+  if (!el) return;
+  const isPercent = typeof target === 'string' && target.includes('%');
+  const numTarget = isPercent ? parseFloat(target) : parseFloat(target);
+  if (isNaN(numTarget)) { el.textContent = target; return; }
+  const start = performance.now();
+  const startVal = 0;
+  function step(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const ease = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(startVal + (numTarget - startVal) * ease);
+    el.textContent = isPercent ? current + '%' : current + suffix;
+    if (progress < 1) requestAnimationFrame(step);
+    else el.textContent = target;
+  }
+  requestAnimationFrame(step);
+}
+
+function animateAllCounters() {
+  document.querySelectorAll('.stat-value').forEach(el => {
+    const val = el.textContent.trim();
+    if (val && val !== '—') animateCounter(el, val);
+  });
+}
+
+// ─── COLOR-CODED TABLE ROWS ───────────────────────────
+function colorCodeRows() {
+  document.querySelectorAll('#consultants-body tr').forEach(row => {
+    const pctCell = row.cells[row.cells.length - 1];
+    if (!pctCell) return;
+    const pctText = pctCell.textContent.replace('%','').trim();
+    const pct = parseFloat(pctText);
+    if (isNaN(pct)) return;
+    if (pct >= 100) {
+      row.style.background = 'rgba(26,170,110,0.07)';
+      row.style.borderLeft = '3px solid #1aaa6e';
+    } else if (pct >= 75) {
+      row.style.background = 'rgba(212,135,10,0.06)';
+      row.style.borderLeft = '3px solid #d4870a';
+    } else if (pct > 0) {
+      row.style.background = 'rgba(204,51,51,0.05)';
+      row.style.borderLeft = '3px solid #cc3333';
+    }
+  });
+}
+
+// ─── PDF EXPORT ───────────────────────────────────────
+function exportPDF() {
+  const btn = document.getElementById('pdf-btn');
+  if (btn) { btn.textContent = '⏳ Generuję...'; btn.disabled = true; }
+
+  const style = `
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif; }
+      body { background: white; color: #1a2e35; padding: 32px; }
+      h1 { font-size: 20px; font-weight: 700; color: #1a2e35; margin-bottom: 4px; }
+      .sub { font-size: 12px; color: #6b9aa5; margin-bottom: 24px; }
+      .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+      .card { background: #f0f9f9; border: 1px solid #bee3e3; border-radius: 8px; padding: 12px 16px; }
+      .card-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: #6b9aa5; margin-bottom: 4px; }
+      .card-value { font-size: 24px; font-weight: 800; color: #1a2e35; }
+      .card-delta { font-size: 10px; color: #6b9aa5; margin-top: 2px; }
+      table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 24px; }
+      th { background: rgba(0,196,192,0.1); padding: 8px 10px; text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: #1a2e35; border-bottom: 1px solid #bee3e3; }
+      td { padding: 7px 10px; border-bottom: 1px solid #f0f9f9; color: #2d5a65; }
+      td:first-child { color: #1a2e35; font-weight: 500; }
+      .section-title { font-size: 13px; font-weight: 700; color: #1a2e35; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #00c4c0; }
+      .green { color: #1aaa6e; } .teal { color: #00c4c0; font-weight: 600; }
+      .footer { margin-top: 32px; font-size: 9px; color: #6b9aa5; border-top: 1px solid #bee3e3; padding-top: 12px; }
+    </style>
+  `;
+
+  // Zbierz dane z aktywnej zakładki
+  const month = document.getElementById('month-label').textContent;
+  const meetings = document.getElementById('kpi-meetings')?.textContent || '—';
+  const target = document.getElementById('kpi-target')?.textContent || '—';
+  const contracts = document.getElementById('kpi-contracts')?.textContent || '—';
+  const conversion = document.getElementById('kpi-conversion')?.textContent || '—';
+
+  // Zbierz tabelę konsultantów
+  let tableRows = '';
+  document.querySelectorAll('#consultants-body tr').forEach(row => {
+    if (row.cells.length < 4) return;
+    const bg = row.style.background.includes('170,110') ? 'style="background:rgba(26,170,110,0.07)"'
+             : row.style.background.includes('135,10') ? 'style="background:rgba(212,135,10,0.06)"'
+             : row.style.background.includes('51,51') ? 'style="background:rgba(204,51,51,0.05)"' : '';
+    tableRows += `<tr ${bg}>
+      <td>${row.cells[0]?.textContent||''}</td>
+      <td>${row.cells[1]?.textContent||''}</td>
+      <td>${row.cells[2]?.textContent||''}</td>
+      <td>${row.cells[3]?.textContent||''}</td>
+      <td>${row.cells[4]?.querySelector('.progress-pct')?.textContent||row.cells[4]?.textContent||''}</td>
+    </tr>`;
+  });
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">${style}</head><body>
+    <h1>BookingHost – Raport Miesięczny – Zespół Wsparcia Sprzedaży</h1>
+    <div class="sub">${month} &nbsp;·&nbsp; Wygenerowano: ${new Date().toLocaleString('pl-PL')}</div>
+
+    <div class="grid">
+      <div class="card"><div class="card-label">Spotkania w terenie</div><div class="card-value">${meetings}</div><div class="card-delta">${document.getElementById('kpi-meetings-delta')?.textContent||''}</div></div>
+      <div class="card"><div class="card-label">Realizacja targetu</div><div class="card-value teal">${target}</div><div class="card-delta">${document.getElementById('kpi-target-delta')?.textContent||''}</div></div>
+      <div class="card"><div class="card-label">Umowy CC</div><div class="card-value">${contracts}</div><div class="card-delta">${document.getElementById('kpi-contracts-delta')?.textContent||''}</div></div>
+      <div class="card"><div class="card-label">Konwersja</div><div class="card-value">${conversion}</div><div class="card-delta">${document.getElementById('kpi-conversion-delta')?.textContent||''}</div></div>
+    </div>
+
+    <div class="section-title">Spotkania odbyte w terenie i umowy per konsultant CC</div>
+    <table>
+      <thead><tr><th>Konsultant</th><th>Spotkania</th><th>Umowy</th><th>Konwersja</th><th>% targetu</th></tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>
+
+    <div class="footer">BookingHost sp. z o.o. &nbsp;·&nbsp; Raport wewnętrzny &nbsp;·&nbsp; Dane z Google Sheets</div>
+  </body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => { win.print(); }, 600);
+
+  if (btn) { btn.textContent = '📄 Eksportuj PDF'; btn.disabled = false; }
+}
+
 // ─── RELOAD ALL ───────────────────────────────────────
 function reloadAll() {
   updateMonthLabels();
@@ -1987,6 +2115,8 @@ function reloadAll() {
   loadKpi();
   document.getElementById('footer-timestamp').textContent =
     'Ostatnia aktualizacja: ' + new Date().toLocaleString('pl-PL');
+  // Animuj liczniki i koloruj wiersze po załadowaniu danych
+  setTimeout(() => { animateAllCounters(); colorCodeRows(); }, 800);
 }
 
 // ─── INIT ─────────────────────────────────────────────
