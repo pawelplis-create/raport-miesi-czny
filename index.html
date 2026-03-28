@@ -645,8 +645,13 @@
       <span class="sub" id="retention-period">— ładowanie danych</span>
     </div>
 
-    <!-- KPI CARDS: 3 typy retencji -->
-    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
+    <!-- KPI CARDS: suma + 3 typy retencji -->
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
+      <div class="stat-card" style="border-top:3px solid var(--navy);background:linear-gradient(135deg,rgba(26,46,53,0.05),white);">
+        <div class="stat-label">Łącznie odzyskanych mieszkań</div>
+        <div class="stat-value" id="r-total-sum">—</div>
+        <div class="stat-delta neu" id="r-total-sum-d">suma wszystkich typów</div>
+      </div>
       <div class="stat-card" style="border-top:3px solid var(--teal);">
         <div class="stat-label">Aneks – czynsz gwarantowany</div>
         <div class="stat-value" id="r-aneks">—</div>
@@ -672,6 +677,25 @@
       </div>
     </div>
 
+    <!-- PODSUMOWANIE: suma czynszów gwarantowanych per miasto -->
+    <div class="table-wrap">
+      <div class="table-header">
+        <div class="table-title">📍 Czynsz gwarantowany per miasto</div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Miasto</th>
+            <th>Liczba mieszkań</th>
+            <th>Suma czynszu gwarantowanego / mies.</th>
+          </tr>
+        </thead>
+        <tbody id="retention-city-body">
+          <tr><td colspan="3" class="state-msg">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
     <!-- TABELA: mieszkania przeniesione na czynsz gwarantowany -->
     <div class="table-wrap">
       <div class="table-header">
@@ -689,25 +713,6 @@
         </thead>
         <tbody id="retention-cg-body">
           <tr><td colspan="5" class="state-msg">Skonfiguruj URL Google Sheets w zakładce Konfiguracja</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- PODSUMOWANIE: suma czynszów gwarantowanych per miasto -->
-    <div class="table-wrap">
-      <div class="table-header">
-        <div class="table-title">📍 Czynsz gwarantowany per miasto</div>
-      </div>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Miasto</th>
-            <th>Liczba mieszkań</th>
-            <th>Suma czynszu gwarantowanego / mies.</th>
-          </tr>
-        </thead>
-        <tbody id="retention-city-body">
-          <tr><td colspan="3" class="state-msg">—</td></tr>
         </tbody>
       </table>
     </div>
@@ -1499,39 +1504,61 @@ function loadRetention() {
   fetchCSV(cfg.retentionUrl, (rows, err) => {
     if (err || !rows || rows.length === 0) return;
 
-    // Count by type (kolumna: typ = "aneks_cg" | "anulowanie" | "lt")
-    const aneks = rows.filter(r => (r.typ||'').toLowerCase().includes('aneks') || (r.typ||'').toLowerCase().includes('cg')).length;
-    const anulowanie = rows.filter(r => (r.typ||'').toLowerCase().includes('anulowanie') || (r.typ||'').toLowerCase().includes('anuluj')).length;
-    const lt = rows.filter(r => (r.typ||'').toLowerCase().includes('lt') || (r.typ||'').toLowerCase().includes('długoterm') || (r.typ||'').toLowerCase().includes('dlugoterm')).length;
+    // Oddziel wiersze trendów od wierszy danych
+    const trendAneksRows = rows.filter(r => (r.typ||'').toLowerCase().includes('trend_aneks'));
+    const trendAnulRows  = rows.filter(r => (r.typ||'').toLowerCase().includes('trend_anulowanie'));
+    const trendLtRows    = rows.filter(r => (r.typ||'').toLowerCase().includes('trend_lt'));
+    const dataRows = rows.filter(r => !(r.typ||'').toLowerCase().startsWith('trend_'));
 
+    // Count by type
+    const aneks     = dataRows.filter(r => (r.typ||'').toLowerCase().includes('aneks') || (r.typ||'').toLowerCase().includes('cg')).length;
+    const anulowanie= dataRows.filter(r => (r.typ||'').toLowerCase().includes('anulowanie') || (r.typ||'').toLowerCase().includes('anuluj')).length;
+    const lt        = dataRows.filter(r => (r.typ||'').toLowerCase() === 'lt' || (r.typ||'').toLowerCase().includes('długoterm') || (r.typ||'').toLowerCase().includes('dlugoterm')).length;
+    const totalSum  = aneks + anulowanie + lt;
+
+    document.getElementById('r-total-sum').textContent = totalSum;
+    document.getElementById('r-total-sum-d').textContent = `${aneks} CG + ${anulowanie} anulowanych + ${lt} LT`;
     document.getElementById('r-aneks').textContent = aneks;
-    document.getElementById('r-aneks-d').textContent = `mieszkań w tym miesiącu`;
     document.getElementById('r-anulowanie').textContent = anulowanie;
-    document.getElementById('r-anulowanie-d').textContent = `klientów zatrzymanych`;
     document.getElementById('r-lt').textContent = lt;
-    document.getElementById('r-lt-d').textContent = `przeniesionych do HostRent`;
 
-    // Trend chart: rows with miesiac + aneks + anulowanie + lt columns (trend sheet)
-    // Fallback: aggregate current month only as single bar
-    const trendRows = rows.filter(r => r.miesiac);
-    if (trendRows.length > 1) {
-      const tLabels = trendRows.map(r => r.miesiac);
+    // Trend chart z wierszy trend_*
+    // Pobierz unikalne miesiące z wierszy trendu
+    const allTrendMonths = [...new Set([
+      ...trendAneksRows.map(r => r.miesiac),
+      ...trendAnulRows.map(r => r.miesiac),
+      ...trendLtRows.map(r => r.miesiac)
+    ].filter(Boolean))];
+
+    // Posortuj miesiące chronologicznie
+    const MONTHS_ORDER = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
+    allTrendMonths.sort((a,b) => {
+      const [am, ay] = a.split(' '); const [bm, by] = b.split(' ');
+      if (ay !== by) return parseInt(ay) - parseInt(by);
+      return MONTHS_ORDER.indexOf(am) - MONTHS_ORDER.indexOf(bm);
+    });
+
+    if (allTrendMonths.length > 0) {
       if (charts['chart-retention-trend']) charts['chart-retention-trend'].destroy();
       const ctx = document.getElementById('chart-retention-trend');
       if (ctx) {
+        const getVal = (trendArr, m) => {
+          const r = trendArr.find(r => r.miesiac === m);
+          return r ? (parseInt(r.liczba)||parseInt(r.spotkania)||parseInt(r.wartosc)||0) : 0;
+        };
         charts['chart-retention-trend'] = new Chart(ctx, {
           type: 'bar',
           data: {
-            labels: tLabels,
+            labels: allTrendMonths,
             datasets: [
-              { label: 'Aneks – czynsz gwarantowany', data: trendRows.map(r => parseInt(r.aneks_cg)||0), backgroundColor: 'rgba(0,196,192,0.55)', borderColor: TEAL, borderWidth: 1.5, borderRadius: 4 },
-              { label: 'Anulowanie wypowiedzenia', data: trendRows.map(r => parseInt(r.anulowanie)||0), backgroundColor: 'rgba(46,204,143,0.5)', borderColor: '#2ecc8f', borderWidth: 1.5, borderRadius: 4 },
-              { label: 'Przejście na LT', data: trendRows.map(r => parseInt(r.przejscie_lt)||0), backgroundColor: 'rgba(240,165,0,0.45)', borderColor: '#f0a500', borderWidth: 1.5, borderRadius: 4 }
+              { label: 'Czynsz gwarantowany', data: allTrendMonths.map(m => getVal(trendAneksRows, m)), backgroundColor: 'rgba(0,196,192,0.55)', borderColor: TEAL, borderWidth: 1.5, borderRadius: 4 },
+              { label: 'Anulowanie wypowiedzenia', data: allTrendMonths.map(m => getVal(trendAnulRows, m)), backgroundColor: 'rgba(26,170,110,0.5)', borderColor: '#1aaa6e', borderWidth: 1.5, borderRadius: 4 },
+              { label: 'Przejście na LT', data: allTrendMonths.map(m => getVal(trendLtRows, m)), backgroundColor: 'rgba(212,135,10,0.45)', borderColor: '#d4870a', borderWidth: 1.5, borderRadius: 4 }
             ]
           },
           options: { ...chartDefaults, scales: {
-            x: { ticks:{color:'#5a8590',font:{size:10}}, grid:{color:'rgba(0,196,192,0.07)'}},
-            y: { ticks:{color:'#5a8590',font:{size:10}}, grid:{color:'rgba(0,196,192,0.07)'}, beginAtZero:true, stacked:false}
+            x: { ticks:{color:'#2d5a65',font:{size:10}}, grid:{color:'rgba(0,196,192,0.10)'}},
+            y: { ticks:{color:'#2d5a65',font:{size:10}}, grid:{color:'rgba(0,196,192,0.10)'}, beginAtZero:true}
           }}
         });
       }
