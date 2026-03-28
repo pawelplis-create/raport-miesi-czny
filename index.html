@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Raport Miesięczny – Zespół Wsparcia Sprzedaży</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
@@ -24,8 +24,8 @@
     --success: #1aaa6e;
     --warning: #d4870a;
     --danger: #cc3333;
-    --font-display: 'Syne', sans-serif;
-    --font-body: 'DM Sans', sans-serif;
+    --font-display: 'Plus Jakarta Sans', sans-serif;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -82,7 +82,7 @@
     justify-content: center;
   }
   .logo-mark svg { width: 22px; height: 22px; fill: var(--navy); }
-  .logo-text { font-family: var(--font-display); font-size: 1.15rem; font-weight: 800; letter-spacing: -0.02em; }
+  .logo-text { font-family: var(--font-display); font-size: 1rem; font-weight: 700; letter-spacing: -0.01em; color: #ffffff; white-space: nowrap; }
   .logo-text span { color: var(--teal); }
   .header-meta {
     display: flex;
@@ -1391,16 +1391,24 @@ function loadStats() {
     document.getElementById('kpi-conversion').textContent = conversion + '%';
     document.getElementById('kpi-conversion-delta').innerHTML = convPrevMM ? deltaHtml(parseFloat(conversion), parseFloat(convPrevMM), '% m/m') : '<span style="color:var(--text-muted)">— brak danych m/m</span>';
 
-    // Table – consultants
+    // Table – consultants sorted by % target desc
     const tbody = document.getElementById('consultants-body');
     if (consultants.length > 0) {
-      tbody.innerHTML = consultants.map(r => {
+      const sorted = [...consultants].sort((a, b) => {
+        const aUm = parseInt(a.umowy)||0, aTUm = parseInt(a.target_umowy)||0;
+        const bUm = parseInt(b.umowy)||0, bTUm = parseInt(b.target_umowy)||0;
+        const aPct = aTUm > 0 ? aUm/aTUm : (aUm > 0 ? 999 : -1);
+        const bPct = bTUm > 0 ? bUm/bTUm : (bUm > 0 ? 999 : -1);
+        return bPct - aPct;
+      });
+      tbody.innerHTML = sorted.map((r, i) => {
         const spot = parseInt(r.spotkania)||0;
         const um = parseInt(r.umowy)||0;
         const tUm = parseInt(r.target_umowy)||0;
         const conv = spot > 0 ? ((um/spot)*100).toFixed(0)+'%' : '—';
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
         return `<tr>
-          <td>${r.imie_nazwisko||'—'}</td>
+          <td><span style="font-weight:700;margin-right:8px;color:var(--teal)">${medal}</span>${r.imie_nazwisko||'—'}</td>
           <td>${spot}</td>
           <td>${um}</td>
           <td>${conv}</td>
