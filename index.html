@@ -529,7 +529,7 @@
       <div class="logo-text"><span>Booking</span>Host – Raport Miesięczny – Zespół Wsparcia Sprzedaży</div>
     </div>
     <div class="header-meta">
-      <span id="month-label">Ładowanie...</span>
+      <span id="month-label" style="display:none;">Ładowanie...</span>
       <button id="pdf-btn" class="refresh-btn" onclick="exportPDF()" style="background:var(--teal);color:var(--navy);border-color:var(--teal);font-weight:600;">
         📄 Eksportuj PDF
       </button>
@@ -540,6 +540,14 @@
     </div>
   </div>
 </header>
+
+<!-- MONTH PICKER BAR -->
+<div id="month-picker-bar" style="position:relative;z-index:9;background:#ffffff;border-bottom:1px solid var(--border);padding:0 2rem;">
+  <div style="max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:0.5rem;height:44px;overflow-x:auto;scrollbar-width:none;">
+    <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);white-space:nowrap;margin-right:0.5rem;">Miesiąc:</span>
+    <div id="month-buttons" style="display:flex;gap:0.4rem;"></div>
+  </div>
+</div>
 
 <!-- TAB BAR -->
 <nav class="tab-bar">
@@ -1392,8 +1400,12 @@ function loadStats() {
   fetchCSV(cfg.statsUrl, (rows, err) => {
     if (err || !rows || rows.length === 0) return;
 
-    // Użyj wszystkich wierszy
-    const activeRows = rows;
+    // Użyj wszystkich wierszy lub filtruj po miesiącu
+    const miesiacKey2 = Object.keys(rows[0]||{}).find(k => k.toLowerCase().includes('miesiac') || k.toLowerCase().includes('miesi'));
+    const filteredByMonth = miesiacKey2
+      ? rows.filter(r => (r[miesiacKey2]||'').trim().toLowerCase() === (cfg.month||'').trim().toLowerCase())
+      : rows;
+    const activeRows = filteredByMonth.length > 0 ? filteredByMonth : rows;
 
     // Wyciągnij specjalny wiersz R/R (rola = zespol_poprz_rok)
     const yyRow = activeRows.find(r => (r.rola||'').toLowerCase().includes('poprz_rok') || (r.rola||'').toLowerCase().includes('poprzedni_rok'));
@@ -1417,7 +1429,12 @@ function loadStats() {
     document.getElementById('kpi-meetings').textContent = totalMeetings;
     document.getElementById('kpi-meetings-delta').innerHTML = deltaHtml(totalMeetings, prevMM, ' spotk.');
     document.getElementById('kpi-contracts').textContent = totalContracts;
-    document.getElementById('kpi-contracts-delta').innerHTML = deltaHtml(totalContracts, targetC, ' cel: '+targetC);
+    const prevContractsMMval = dataRows.reduce((s,r) => s+(parseInt(r.umowy_poprz_mies)||0), 0);
+    if (prevContractsMMval > 0) {
+      document.getElementById('kpi-contracts-delta').innerHTML = deltaHtml(totalContracts, prevContractsMMval, ' um.');
+    } else {
+      document.getElementById('kpi-contracts-delta').innerHTML = `<span style="color:var(--text-muted)">cel: ${targetC} umów</span>`;
+    }
     document.getElementById('kpi-target').textContent = targetM > 0 ? Math.round(totalMeetings/targetM*100)+'%' : '—';
     document.getElementById('kpi-target-delta').textContent = targetM > 0 ? `cel: ${targetM} spotkań` : '—';
 
@@ -1979,7 +1996,66 @@ function loadKpi() {
   });
 }
 
-// ─── ANIMATED COUNTER ─────────────────────────────────
+// ─── MONTH PICKER ─────────────────────────────────────
+const MONTHS_PL_ORDER = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
+
+function sortMonths(months) {
+  return [...months].sort((a,b) => {
+    const [am,ay] = a.split(' '); const [bm,by] = b.split(' ');
+    if (ay !== by) return parseInt(ay) - parseInt(by);
+    return MONTHS_PL_ORDER.indexOf(am) - MONTHS_PL_ORDER.indexOf(bm);
+  });
+}
+
+function buildMonthPicker(months) {
+  const container = document.getElementById('month-buttons');
+  if (!container || months.length === 0) return;
+  const sorted = sortMonths(months);
+  container.innerHTML = sorted.map(m => `
+    <button onclick="switchMonth('${m}')" id="mbtn-${m.replace(/ /g,'-')}"
+      style="padding:4px 14px;border-radius:20px;border:1px solid var(--border);
+      background:${m === cfg.month ? 'var(--teal)' : 'transparent'};
+      color:${m === cfg.month ? 'var(--navy)' : 'var(--text-muted)'};
+      font-family:var(--font-display);font-size:0.78rem;font-weight:600;
+      cursor:pointer;white-space:nowrap;transition:all 0.2s;">
+      ${m}
+    </button>`).join('');
+}
+
+function switchMonth(month) {
+  cfg.month = month;
+  // Update button styles
+  document.querySelectorAll('#month-buttons button').forEach(btn => {
+    const isActive = btn.textContent.trim() === month;
+    btn.style.background = isActive ? 'var(--teal)' : 'transparent';
+    btn.style.color = isActive ? 'var(--navy)' : 'var(--text-muted)';
+    btn.style.borderColor = isActive ? 'var(--teal)' : 'var(--border)';
+  });
+  updateMonthLabels();
+  loadStats();
+  loadRetention();
+  loadLongterm();
+  loadImprovements();
+  loadKpi();
+  document.getElementById('footer-timestamp').textContent =
+    'Ostatnia aktualizacja: ' + new Date().toLocaleString('pl-PL');
+  setTimeout(() => { animateAllCounters(); colorCodeRows(); }, 800);
+}
+
+function detectAvailableMonths() {
+  // Wczytaj arkusz statystyki i wyciągnij unikalne miesiące
+  fetchCSV(cfg.statsUrl, (rows, err) => {
+    if (err || !rows) return;
+    const miesiacKey = Object.keys(rows[0]||{}).find(k => k.toLowerCase().includes('miesiac') || k.toLowerCase().includes('miesi'));
+    if (!miesiacKey) {
+      // Brak kolumny miesiac — tylko jeden miesiąc
+      buildMonthPicker([cfg.month]);
+      return;
+    }
+    const months = [...new Set(rows.map(r => (r[miesiacKey]||'').trim()).filter(Boolean))];
+    buildMonthPicker(months);
+  });
+}
 function animateCounter(el, target, duration=800, suffix='') {
   if (!el) return;
   const isPercent = typeof target === 'string' && target.includes('%');
@@ -2107,6 +2183,7 @@ function exportPDF() {
 // ─── RELOAD ALL ───────────────────────────────────────
 function reloadAll() {
   updateMonthLabels();
+  detectAvailableMonths();
   loadStats();
   loadRetention();
   loadLongterm();
@@ -2115,7 +2192,6 @@ function reloadAll() {
   loadKpi();
   document.getElementById('footer-timestamp').textContent =
     'Ostatnia aktualizacja: ' + new Date().toLocaleString('pl-PL');
-  // Animuj liczniki i koloruj wiersze po załadowaniu danych
   setTimeout(() => { animateAllCounters(); colorCodeRows(); }, 800);
 }
 
