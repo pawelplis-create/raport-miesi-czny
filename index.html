@@ -570,6 +570,9 @@
     <button class="tab-btn" onclick="switchTab('kpi')" data-tab="kpi">
       <span class="tab-icon">🎯</span> KPI Paweł
     </button>
+    <button class="tab-btn" onclick="switchTab('bonuses')" data-tab="bonuses">
+      <span class="tab-icon">💰</span> Premie zespołu
+    </button>
     <button class="tab-btn" onclick="switchTab('config')" data-tab="config">
       <span class="tab-icon">🔗</span> Konfiguracja
     </button>
@@ -1043,6 +1046,60 @@
   </section>
 
   <!-- ═══════════════════════════════════════════════
+       TAB 8 – PREMIE ZESPOŁU
+  ═══════════════════════════════════════════════ -->
+  <section class="tab-panel" id="tab-bonuses">
+    <div class="section-heading">
+      <h2>Premie zespołu</h2>
+      <span class="sub" id="bonuses-period">— ładowanie danych</span>
+    </div>
+
+    <!-- KPI CARDS: sumy -->
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:2rem;">
+      <div class="stat-card" style="border-top:3px solid var(--navy);background:linear-gradient(135deg,rgba(26,46,53,0.05),white);">
+        <div class="stat-label">Łącznie premie zespołu</div>
+        <div class="stat-value" id="bonus-total">—</div>
+        <div class="stat-delta neu" id="bonus-total-d">suma wszystkich premii</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid var(--teal);">
+        <div class="stat-label">Liczba osób z premią</div>
+        <div class="stat-value" id="bonus-count">—</div>
+        <div class="stat-delta neu">w tym miesiącu</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid var(--success);">
+        <div class="stat-label">Średnia premia</div>
+        <div class="stat-value" id="bonus-avg">—</div>
+        <div class="stat-delta neu">na osobę</div>
+      </div>
+    </div>
+
+    <!-- TABELA PREMII -->
+    <div class="table-wrap">
+      <div class="table-header">
+        <div class="table-title">💰 Zestawienie premii per osoba</div>
+      </div>
+      <table class="data-table" style="font-size:0.82rem;">
+        <thead>
+          <tr>
+            <th>Konsultant</th>
+            <th>Premia za KPI</th>
+            <th>Premia za nadwyżkę KPI</th>
+            <th>Premia KT (umowy)</th>
+            <th>Premia LT (umowy)</th>
+            <th>Retencja</th>
+            <th>Premia motywacyjna</th>
+            <th>Premia za konkurs</th>
+            <th style="color:var(--teal);">Suma</th>
+          </tr>
+        </thead>
+        <tbody id="bonuses-body">
+          <tr><td colspan="8" class="state-msg">Ładowanie danych...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
        TAB 7 – KONFIGURACJA
   ═══════════════════════════════════════════════ -->
   <section class="tab-panel" id="tab-config">
@@ -1117,6 +1174,16 @@
         <div class="config-row">
           <label>URL CSV arkusza składu zespołu</label>
           <input class="config-input" id="cfg-team-url" placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=..." />
+        </div>
+      </div>
+    </div>
+
+    <div class="config-section">
+      <h3>💰 Premie zespołu</h3>
+      <div class="config-grid">
+        <div class="config-row">
+          <label>URL CSV arkusza premii</label>
+          <input class="config-input" id="cfg-bonuses-url" placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=..." />
         </div>
       </div>
     </div>
@@ -1245,6 +1312,7 @@ const DEFAULT_CFG = {
   imprUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSFItyXpdi46ZZwFwCR14NNkAg00tioqKmgTiAqtXXJV2v9EBUgot7VYh9xtQp02GE3w_0eGfiXosZ0/pub?gid=86607779&single=true&output=csv',
   teamUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSFItyXpdi46ZZwFwCR14NNkAg00tioqKmgTiAqtXXJV2v9EBUgot7VYh9xtQp02GE3w_0eGfiXosZ0/pub?gid=2076862341&single=true&output=csv',
   kpiUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSFItyXpdi46ZZwFwCR14NNkAg00tioqKmgTiAqtXXJV2v9EBUgot7VYh9xtQp02GE3w_0eGfiXosZ0/pub?gid=292904493&single=true&output=csv',
+  bonusesUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSFItyXpdi46ZZwFwCR14NNkAg00tioqKmgTiAqtXXJV2v9EBUgot7VYh9xtQp02GE3w_0eGfiXosZ0/pub?gid=1308922254&single=true&output=csv',
 };
 
 function loadCfg() {
@@ -1259,6 +1327,7 @@ function loadCfg() {
   document.getElementById('cfg-impr-url').value = cfg.imprUrl;
   document.getElementById('cfg-team-url').value = cfg.teamUrl;
   document.getElementById('cfg-kpi-url').value = cfg.kpiUrl;
+  if (document.getElementById('cfg-bonuses-url')) document.getElementById('cfg-bonuses-url').value = cfg.bonusesUrl || '';
 }
 
 function saveConfig() {
@@ -2037,6 +2106,7 @@ function switchMonth(month) {
   loadLongterm();
   loadImprovements();
   loadKpi();
+  loadBonuses();
   document.getElementById('footer-timestamp').textContent =
     'Ostatnia aktualizacja: ' + new Date().toLocaleString('pl-PL');
   setTimeout(() => { animateAllCounters(); colorCodeRows(); }, 800);
@@ -2180,7 +2250,84 @@ function exportPDF() {
   if (btn) { btn.textContent = '📄 Eksportuj PDF'; btn.disabled = false; }
 }
 
-// ─── RELOAD ALL ───────────────────────────────────────
+// ─── BONUSES TAB ──────────────────────────────────────
+function loadBonuses() {
+  const tbody = document.getElementById('bonuses-body');
+  if (!cfg.bonusesUrl) {
+    tbody.innerHTML = '<tr><td colspan="8" class="state-msg">Dodaj URL arkusza premii w zakładce Konfiguracja</td></tr>';
+    return;
+  }
+  fetchCSV(cfg.bonusesUrl, (rows, err) => {
+    if (err || !rows || rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="state-msg">Brak danych</td></tr>';
+      return;
+    }
+
+    // Filtruj po miesiącu
+    const miesiacKey = Object.keys(rows[0]||{}).find(k => k.toLowerCase().includes('miesiac') || k.toLowerCase().includes('miesi'));
+    const filtered = miesiacKey
+      ? rows.filter(r => (r[miesiacKey]||'').trim().toLowerCase() === (cfg.month||'').trim().toLowerCase())
+      : rows;
+    const dataRows = filtered.length > 0 ? filtered : rows;
+
+    document.getElementById('bonuses-period').textContent = '— ' + (cfg.month || '');
+
+    const fmt = v => v > 0 ? parseInt(v).toLocaleString('pl') + ' zł' : '<span style="color:var(--text-muted)">—</span>';
+
+    let totalAll = 0;
+    let countWithBonus = 0;
+
+    tbody.innerHTML = dataRows.map(r => {
+      const kpi      = parseInt(r.premia_kpi)||0;
+      const nadwyzka = parseInt(r.premia_nadwyzka)||0;
+      const kt       = parseInt(r.premia_kt)||0;
+      const lt       = parseInt(r.premia_lt)||0;
+      const retencja = parseInt(r.premia_retencja)||0;
+      const motyw    = parseInt(r.premia_motywacyjna)||0;
+      const konkurs  = parseInt(r.premia_konkurs)||0;
+      const suma     = kpi + nadwyzka + kt + lt + retencja + motyw + konkurs;
+      totalAll += suma;
+      if (suma > 0) countWithBonus++;
+      return `<tr>
+        <td style="font-weight:600;">${r.imie_nazwisko||'—'}</td>
+        <td>${fmt(kpi)}</td>
+        <td>${fmt(nadwyzka)}</td>
+        <td>${fmt(kt)}</td>
+        <td>${fmt(lt)}</td>
+        <td>${fmt(retencja)}</td>
+        <td>${fmt(motyw)}</td>
+        <td>${fmt(konkurs)}</td>
+        <td style="font-weight:700;color:var(--teal);">${suma > 0 ? parseInt(suma).toLocaleString('pl') + ' zł' : '—'}</td>
+      </tr>`;
+    }).join('');
+
+    // Wiersz sumy
+    const sumKpi      = dataRows.reduce((s,r) => s+(parseInt(r.premia_kpi)||0), 0);
+    const sumNadwyzka = dataRows.reduce((s,r) => s+(parseInt(r.premia_nadwyzka)||0), 0);
+    const sumKt       = dataRows.reduce((s,r) => s+(parseInt(r.premia_kt)||0), 0);
+    const sumLt       = dataRows.reduce((s,r) => s+(parseInt(r.premia_lt)||0), 0);
+    const sumRet      = dataRows.reduce((s,r) => s+(parseInt(r.premia_retencja)||0), 0);
+    const sumMotyw    = dataRows.reduce((s,r) => s+(parseInt(r.premia_motywacyjna)||0), 0);
+    const sumKonkurs  = dataRows.reduce((s,r) => s+(parseInt(r.premia_konkurs)||0), 0);
+    tbody.innerHTML += `<tr style="border-top:2px solid var(--border);background:rgba(0,196,192,0.04);">
+      <td style="font-weight:700;">Suma</td>
+      <td style="font-weight:700;">${sumKpi > 0 ? sumKpi.toLocaleString('pl')+' zł' : '—'}</td>
+      <td style="font-weight:700;">${sumNadwyzka > 0 ? sumNadwyzka.toLocaleString('pl')+' zł' : '—'}</td>
+      <td style="font-weight:700;">${sumKt > 0 ? sumKt.toLocaleString('pl')+' zł' : '—'}</td>
+      <td style="font-weight:700;">${sumLt > 0 ? sumLt.toLocaleString('pl')+' zł' : '—'}</td>
+      <td style="font-weight:700;">${sumRet > 0 ? sumRet.toLocaleString('pl')+' zł' : '—'}</td>
+      <td style="font-weight:700;">${sumMotyw > 0 ? sumMotyw.toLocaleString('pl')+' zł' : '—'}</td>
+      <td style="font-weight:700;">${sumKonkurs > 0 ? sumKonkurs.toLocaleString('pl')+' zł' : '—'}</td>
+      <td style="font-weight:700;color:var(--teal);">${totalAll > 0 ? totalAll.toLocaleString('pl')+' zł' : '—'}</td>
+    </tr>`;
+
+    // KPI cards
+    document.getElementById('bonus-total').textContent = totalAll > 0 ? totalAll.toLocaleString('pl') + ' zł' : '—';
+    document.getElementById('bonus-total-d').textContent = 'suma wszystkich premii';
+    document.getElementById('bonus-count').textContent = countWithBonus || '—';
+    document.getElementById('bonus-avg').textContent = countWithBonus > 0 ? Math.round(totalAll/countWithBonus).toLocaleString('pl') + ' zł' : '—';
+  });
+}
 function reloadAll() {
   updateMonthLabels();
   detectAvailableMonths();
@@ -2190,6 +2337,7 @@ function reloadAll() {
   loadImprovements();
   loadTeam();
   loadKpi();
+  loadBonuses();
   document.getElementById('footer-timestamp').textContent =
     'Ostatnia aktualizacja: ' + new Date().toLocaleString('pl-PL');
   setTimeout(() => { animateAllCounters(); colorCodeRows(); }, 800);
