@@ -1093,7 +1093,7 @@
           </tr>
         </thead>
         <tbody id="bonuses-body">
-          <tr><td colspan="8" class="state-msg">Ładowanie danych...</td></tr>
+          <tr><td colspan="9" class="state-msg">Ładowanie danych...</td></tr>
         </tbody>
       </table>
     </div>
@@ -2259,7 +2259,7 @@ function loadBonuses() {
   }
   fetchCSV(cfg.bonusesUrl, (rows, err) => {
     if (err || !rows || rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="state-msg">Brak danych</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" class="state-msg">Brak danych</td></tr>';
       return;
     }
 
@@ -2272,7 +2272,8 @@ function loadBonuses() {
 
     document.getElementById('bonuses-period').textContent = '— ' + (cfg.month || '');
 
-    const fmt = v => v > 0 ? parseInt(v).toLocaleString('pl') + ' zł' : '<span style="color:var(--text-muted)">—</span>';
+    const fmt = v => parseInt(v) >= 0 ? parseInt(v).toLocaleString('pl') + ' zł' : '<span style="color:var(--text-muted)">—</span>';
+    const fmtZero = v => parseInt(v).toLocaleString('pl') + ' zł';
 
     let totalAll = 0;
     let countWithBonus = 0;
@@ -2290,16 +2291,19 @@ function loadBonuses() {
       if (suma > 0) countWithBonus++;
       return `<tr>
         <td style="font-weight:600;">${r.imie_nazwisko||'—'}</td>
-        <td>${fmt(kpi)}</td>
-        <td>${fmt(nadwyzka)}</td>
-        <td>${fmt(kt)}</td>
-        <td>${fmt(lt)}</td>
-        <td>${fmt(retencja)}</td>
-        <td>${fmt(motyw)}</td>
-        <td>${fmt(konkurs)}</td>
-        <td style="font-weight:700;color:var(--teal);">${suma > 0 ? parseInt(suma).toLocaleString('pl') + ' zł' : '—'}</td>
+        <td>${fmtZero(kpi)}</td>
+        <td>${fmtZero(nadwyzka)}</td>
+        <td>${fmtZero(kt)}</td>
+        <td>${fmtZero(lt)}</td>
+        <td>${fmtZero(retencja)}</td>
+        <td>${fmtZero(motyw)}</td>
+        <td>${fmtZero(konkurs)}</td>
+        <td style="font-weight:700;color:var(--teal);">${fmtZero(suma)}</td>
       </tr>`;
     }).join('');
+
+    // Średnia liczona po wszystkich osobach (nie tylko z premią)
+    const totalPeople = dataRows.length;
 
     // Wiersz sumy
     const sumKpi      = dataRows.reduce((s,r) => s+(parseInt(r.premia_kpi)||0), 0);
@@ -2322,10 +2326,10 @@ function loadBonuses() {
     </tr>`;
 
     // KPI cards
-    document.getElementById('bonus-total').textContent = totalAll > 0 ? totalAll.toLocaleString('pl') + ' zł' : '—';
+    document.getElementById('bonus-total').textContent = totalAll > 0 ? totalAll.toLocaleString('pl') + ' zł' : '0 zł';
     document.getElementById('bonus-total-d').textContent = 'suma wszystkich premii';
-    document.getElementById('bonus-count').textContent = countWithBonus || '—';
-    document.getElementById('bonus-avg').textContent = countWithBonus > 0 ? Math.round(totalAll/countWithBonus).toLocaleString('pl') + ' zł' : '—';
+    document.getElementById('bonus-count').textContent = countWithBonus || '0';
+    document.getElementById('bonus-avg').textContent = totalPeople > 0 ? Math.round(totalAll/totalPeople).toLocaleString('pl') + ' zł' : '—';
   });
 }
 function reloadAll() {
